@@ -1,0 +1,50 @@
+export abstract class Mutation<T> {
+    constructor(
+        public key: PropertyKey,
+    ) {}
+}
+
+export class PropertyMutation<T> extends Mutation<T> {
+    constructor(
+        key: PropertyKey,
+        public oldValue: T,
+        public newValue: T,
+    ) {
+        super(key);
+    }
+}
+
+export class SubpropertyMutation<T> extends Mutation<T> {
+    constructor(
+        key: PropertyKey,
+        public mutation: Mutation<any>,
+    ) {
+        super(key);
+    }
+}
+
+export class ArraySpliceMutation<T> extends Mutation<T> {
+    constructor(
+        key: number,
+        public deleted: Array<T>,
+        public inserted: Array<T>,
+    ) {
+        super(key);
+    }
+}
+
+
+// MUTATION HELPER FUNCTIONS
+
+/**
+ * Returns a mutation that cancels out the given mutation, essentially undoing it.
+ */
+export function invertMutation<T>(mutation: Mutation<T>): Mutation<T> {
+    if (mutation instanceof PropertyMutation) {
+        return new PropertyMutation<T>(mutation.key, mutation.newValue, mutation.oldValue);
+    } else if (mutation instanceof ArraySpliceMutation) {
+        return new ArraySpliceMutation<T>(mutation.key as number, mutation.inserted, mutation.deleted);
+    } else if (mutation instanceof SubpropertyMutation) {
+        return new SubpropertyMutation(mutation.key, invertMutation(mutation.mutation));
+    }
+}

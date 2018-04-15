@@ -1,0 +1,16 @@
+{
+  "name": "epoxyjs",
+  "version": "1.0.0",
+  "description": "Proxy-based reactive library for Javascript and Typescript",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha -r ts-node/register ./test/*.ts"
+  },
+  "author": "keaton.brandt@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "npm": "^5.8.0",
+    "rxjs": "^5.5.8"
+  },
+  "devDependencies": {}
+}
