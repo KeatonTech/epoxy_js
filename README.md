@@ -1,7 +1,7 @@
 # Epoxy JS
 ### The reactive glue that binds web apps together
 
-Epoxy JS is a lightweight framework that adds change tracking to generic Javascript data structures
+Epoxy JS is a lightweight (<1000 loc) framework that adds change tracking to generic Javascript data structures
 like Arrays and Objects. The end result is similar to the effect achieved by frontend frameworks like
 Angular, but works without explicit change detection and can be used anywhere in Javascript (not just
 inside special templates).
