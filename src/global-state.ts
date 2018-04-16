@@ -1,4 +1,4 @@
-import {ListenableCollection, IListenableObject, IListenableArray} from './types';
+import {ListenableCollection, IListenableObject, IListenableArray, IListenable} from './types';
 import { Mutation } from './mutations';
 import { makeListenable } from './make-listenable';
 
@@ -6,12 +6,12 @@ import { makeListenable } from './make-listenable';
  * Global state used to track getter calls for computed values.
  */
 export class EpoxyGlobalState {
+
+
+    // GETTER TRACKING
+
     private static trackingGetters = false;
     private static consumedGetters: {collection: ListenableCollection, key: PropertyKey}[] = [];
-
-    static get DebugData(): IListenableObject<IListenableArray<Mutation<any>>> {
-        return makeListenable({});
-    }
 
     public static registerGetterCall(collection: ListenableCollection, key: PropertyKey) {
         if (!EpoxyGlobalState.trackingGetters) return;
@@ -35,6 +35,34 @@ export class EpoxyGlobalState {
             ret.get(getter.collection).add(getter.key);
         }
         return ret;
+    }
+
+
+    // OPERATION BATCHING
+
+    private static changedInBatch: Set<IListenable<any>> = new Set();
+    private static _isBatching: boolean;
+
+
+    static get isBatching() {
+        return this._isBatching;
+    }
+    static set isBatching(newIsBatching: boolean) {
+        if (this._isBatching && !newIsBatching) {
+            this.changedInBatch.forEach((collection) => collection.broadcastCurrentValue());
+        }
+        this._isBatching = newIsBatching;
+    }
+
+    static markChangedDuringBatch(collection: IListenable<any>) {
+        this.changedInBatch.add(collection);
+    }
+
+
+    // DEBUGGING TOOLS
+
+    static get DebugData(): IListenableObject<IListenableArray<Mutation<any>>> {
+        return makeListenable({});
     }
 
     public static logDebugMutation(label: string, mutation: Mutation<any>) {

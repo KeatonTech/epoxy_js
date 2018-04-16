@@ -16,10 +16,18 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     protected output: ListenableCollection;
     public setOutput(output: ListenableCollection) {
         this.output = output;
+        this.mutations.subscribe((mutation) => {
+            if (EpoxyGlobalState.isBatching) {
+                EpoxyGlobalState.markChangedDuringBatch(this.output);
+                return;
+            }
+            this.changeSubject.next(this.copyData(this.output as T));
+        });
     }
 
     public debugLabel: string;
 
+    protected changeSubject: Subject<T> = new Subject();
     protected mutations: Subject<Mutation<T>> = new Subject();
     
     // Stream subscriptions to IListenable instances or Observalbes contained in this structure.
@@ -191,7 +199,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
          * Note that this involves making shallow copies and so should be used sparingly.
          */
         asObservable(target: T) {
-            return this.mutations.map((m) => this.copyData(target)) as Observable<T>;
+            return this.changeSubject.asObservable();
         },
         
         /**
@@ -240,6 +248,13 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                     EpoxyGlobalState.logDebugMutation(this.debugLabel, mutation);
                 });
             }
+        },
+
+        /**
+         * Tells the listenable to immediately broadcast its current value to the asObservable() stream.
+         */
+        broadcastCurrentValue() {
+            this.changeSubject.next(this.copyData(this.output as T));
         }
     };
 }

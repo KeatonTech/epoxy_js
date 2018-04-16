@@ -47,6 +47,11 @@ export interface IListenable<T> {
      * Gives this listenable a unique value that can be displayed in debug tools.
      */
     debugWithLabel(label: string): void;
+
+    /**
+     * Tells the listenable to immediately broadcast its current value to the asObservable() stream.
+     */
+    broadcastCurrentValue(): void;
 }
 
 
