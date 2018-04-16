@@ -70,7 +70,7 @@ automatically update. In an extreme example, this can be used to generate a reac
 the fibonacci sequence, where each value is computed from the two values before it.
 
 ```javascript
-const fibonnaci = makeListenable([1, 1]) as IListenableArray<any>;
+const fibonnaci = makeListenable([1, 1]);
 for (let i = 0; i < 10; i++) {
     const n = i; // Make a new variable for each iteration.
     fibonnaci.push(computed(() => fibonnaci[n] + fibonnaci[n + 1]));

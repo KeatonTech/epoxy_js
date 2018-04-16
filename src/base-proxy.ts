@@ -64,6 +64,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                 const currentKey = this.propertyKeys.get(keySymbol);
                 const oldValue = target[currentKey];
                 if (oldValue == newValue) return;
+                newValue = this.listenFunction(newValue);
 
                 target[currentKey] = newValue;
                 this.mutations.next(new PropertyMutation(currentKey, oldValue, newValue));
