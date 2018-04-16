@@ -12,5 +12,5 @@ export declare class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
     applyMutation(target: T[], mutation: Mutations.Mutation<any>): void;
     get(target: T[], property: PropertyKey): any;
     set(target: T[], property: PropertyKey, value: T | Observable<T>): boolean;
-    private ARRAY_FUNCTION_OVERRIDES;
+    private static ARRAY_FUNCTION_OVERRIDES;
 }

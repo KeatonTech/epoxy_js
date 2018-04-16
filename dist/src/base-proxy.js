@@ -11,79 +11,13 @@ const runners_1 = require("./runners");
 class BaseProxyHandler {
     constructor(listenFunction) {
         this.listenFunction = listenFunction;
+        this.debugLabel = '';
         this.changeSubject = new rxjs_1.Subject();
         this.mutations = new rxjs_1.Subject();
         // Stream subscriptions to IListenable instances or Observalbes contained in this structure.
         this.propertySubscriptions = {};
         // Allows subscription functions to be mapped to their current property key.
         this.propertyKeys = new Map();
-        // ILISTENABLE FUNCTIONALITY
-        this.LISTENABLE_FUNCTION_IMPL = {
-            /**
-             * Returns a stream of all mutation events on this Array instance, including changes to any
-             * of its subproperties.
-             */
-            listen() {
-                return this.mutations.asObservable();
-            },
-            /**
-             * Returns an observable that updates whenever this data structure is mutated in any way.
-             * Note that this involves making shallow copies and so should be used sparingly.
-             */
-            asObservable(target) {
-                return this.changeSubject.asObservable();
-            },
-            /**
-             * Returns an Array that contains the same data as this array, except all of its properties
-             * are observables rather than raw values. This is useful for plugging the structure into
-             * consumers such as UI frameworks.
-             */
-            observables() {
-                return this.observables();
-            },
-            /**
-             * Sets a property on this data structure to a computed value or an Observable. This is
-             * syntactic sugar that helps with type safety.
-             */
-            setComputed(target, key, value) {
-                if (value instanceof Function) {
-                    this.watchObservableProperty(target, key, runners_1.computed(value));
-                }
-                else {
-                    this.watchObservableProperty(target, key, value);
-                }
-            },
-            /**
-             * Applies a given mutation to this collection.
-             */
-            applyMutation(target, mutation) {
-                this.applyMutation(target, mutation);
-            },
-            /**
-             * Applies the opposite of a given mutation to this collection, undoing the change.
-             */
-            unapplyMutation(target, mutation) {
-                this.applyMutation(target, mutations_1.invertMutation(mutation));
-            },
-            /**
-             * Gives this listenable a unique value that can be displayed in debug tools.
-             */
-            debugWithLabel(label) {
-                const hadPreviousLabel = !!this.debugLabel;
-                this.debugLabel = label;
-                if (!hadPreviousLabel) {
-                    this.mutations.subscribe((mutation) => {
-                        global_state_1.EpoxyGlobalState.logDebugMutation(this.debugLabel, mutation);
-                    });
-                }
-            },
-            /**
-             * Tells the listenable to immediately broadcast its current value to the asObservable() stream.
-             */
-            broadcastCurrentValue() {
-                this.changeSubject.next(this.copyData(this.output));
-            }
-        };
     }
     setOutput(output) {
         this.output = output;
@@ -202,14 +136,81 @@ class BaseProxyHandler {
     // PROXY FUNCTIONS
     get(target, property) {
         // Implement IListenableArray functions.
-        if (this.LISTENABLE_FUNCTION_IMPL.hasOwnProperty(property)) {
-            let value = this.LISTENABLE_FUNCTION_IMPL[property];
+        if (BaseProxyHandler.LISTENABLE_FUNCTION_IMPL.hasOwnProperty(property)) {
+            let value = BaseProxyHandler.LISTENABLE_FUNCTION_IMPL[property];
             if (value instanceof Function) {
-                value = value.bind(this, target);
+                value = value.bind(this, this, target);
             }
             return value;
         }
         global_state_1.EpoxyGlobalState.registerGetterCall(this.output, property);
     }
 }
+// ILISTENABLE FUNCTIONALITY
+BaseProxyHandler.LISTENABLE_FUNCTION_IMPL = {
+    /**
+     * Returns a stream of all mutation events on this Array instance, including changes to any
+     * of its subproperties.
+     */
+    listen(handler) {
+        return handler.mutations.asObservable();
+    },
+    /**
+     * Returns an observable that updates whenever this data structure is mutated in any way.
+     * Note that this involves making shallow copies and so should be used sparingly.
+     */
+    asObservable(handler, target) {
+        return this.changeSubject.asObservable();
+    },
+    /**
+     * Returns an Array that contains the same data as this array, except all of its properties
+     * are observables rather than raw values. This is useful for plugging the structure into
+     * consumers such as UI frameworks.
+     */
+    observables(handler) {
+        return handler.observables();
+    },
+    /**
+     * Sets a property on this data structure to a computed value or an Observable. This is
+     * syntactic sugar that helps with type safety.
+     */
+    setComputed(handler, target, key, value) {
+        if (value instanceof Function) {
+            handler.watchObservableProperty(target, key, runners_1.computed(value));
+        }
+        else {
+            handler.watchObservableProperty(target, key, value);
+        }
+    },
+    /**
+     * Applies a given mutation to this collection.
+     */
+    applyMutation(handler, target, mutation) {
+        handler.applyMutation(target, mutation);
+    },
+    /**
+     * Applies the opposite of a given mutation to this collection, undoing the change.
+     */
+    unapplyMutation(handler, target, mutation) {
+        handler.applyMutation(target, mutations_1.invertMutation(mutation));
+    },
+    /**
+     * Gives this listenable a unique value that can be displayed in debug tools.
+     */
+    debugWithLabel(handler, label) {
+        const hadPreviousLabel = !!handler.debugLabel;
+        handler.debugLabel = label;
+        if (!hadPreviousLabel) {
+            handler.mutations.subscribe((mutation) => {
+                global_state_1.EpoxyGlobalState.logDebugMutation(handler.debugLabel, mutation);
+            });
+        }
+    },
+    /**
+     * Tells the listenable to immediately broadcast its current value to the asObservable() stream.
+     */
+    broadcastCurrentValue(handler) {
+        handler.changeSubject.next(handler.copyData(handler.output));
+    }
+};
 exports.BaseProxyHandler = BaseProxyHandler;

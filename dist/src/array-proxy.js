@@ -10,50 +10,6 @@ class ArrayProxyHandler extends base_proxy_1.BaseProxyHandler {
     constructor(listenFunction, initialValues) {
         super(listenFunction);
         this.initialValues = initialValues;
-        // ARRAY FUNCTION OVERRIDES
-        this.ARRAY_FUNCTION_OVERRIDES = {
-            push(proxy, target, item) {
-                target.push.call(target, undefined);
-                if (item instanceof rxjs_1.Observable) {
-                    proxy.watchObservableProperty(target, target.length - 1, item);
-                    return;
-                }
-                target[target.length - 1] = item;
-                proxy.mutations.next(new Mutations.ArraySpliceMutation(target.length - 1, [], [item]));
-            },
-            splice(proxy, target, startIndex, deleteCount, ...insertedItems) {
-                const spliceArgs = [startIndex, deleteCount];
-                spliceArgs.push.apply(spliceArgs, insertedItems.map((value) => proxy.listenFunction(value)));
-                // Some of the subproperty watchers may need to update after a splice because their key
-                // (index) will have changed. For example, if there is an IWatchedArray at index 2 and a
-                // new item is inserted at index 1, any future mutations to that IWatchedArray should be
-                // reported as coming from index 3.
-                proxy.remapPropertyKeys((currentKey) => {
-                    if (typeof (currentKey) == 'number') {
-                        if (currentKey < startIndex) {
-                            return currentKey;
-                        }
-                        else if (currentKey < startIndex + deleteCount) {
-                            return null;
-                        }
-                        else {
-                            return currentKey + insertedItems.length;
-                        }
-                    }
-                    else {
-                        return currentKey;
-                    }
-                });
-                const deletedItems = target.splice.apply(target, spliceArgs);
-                for (let i = 0; i < insertedItems.length; i++) {
-                    if (insertedItems[i] instanceof rxjs_1.Observable) {
-                        target[i + startIndex] = undefined;
-                        proxy.watchObservableProperty(target, startIndex + i, insertedItems[i]);
-                    }
-                }
-                proxy.mutations.next(new Mutations.ArraySpliceMutation(startIndex, deletedItems, insertedItems));
-            },
-        };
         initialValues.forEach((value, index) => this.watchSubpropertyChanges(index, value));
     }
     copyData(target) {
@@ -72,8 +28,8 @@ class ArrayProxyHandler extends base_proxy_1.BaseProxyHandler {
     // PROXY FUNCTIONS
     get(target, property) {
         // Override array functions
-        if (this.ARRAY_FUNCTION_OVERRIDES.hasOwnProperty(property)) {
-            let value = this.ARRAY_FUNCTION_OVERRIDES[property];
+        if (ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES.hasOwnProperty(property)) {
+            let value = ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES[property];
             if (value instanceof Function) {
                 value = value.bind(this, this, target);
             }
@@ -107,4 +63,48 @@ class ArrayProxyHandler extends base_proxy_1.BaseProxyHandler {
         return true;
     }
 }
+// ARRAY FUNCTION OVERRIDES
+ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES = {
+    push(proxy, target, item) {
+        target.push.call(target, undefined);
+        if (item instanceof rxjs_1.Observable) {
+            proxy.watchObservableProperty(target, target.length - 1, item);
+            return;
+        }
+        target[target.length - 1] = item;
+        proxy.mutations.next(new Mutations.ArraySpliceMutation(target.length - 1, [], [item]));
+    },
+    splice(proxy, target, startIndex, deleteCount, ...insertedItems) {
+        const spliceArgs = [startIndex, deleteCount];
+        spliceArgs.push.apply(spliceArgs, insertedItems.map((value) => proxy.listenFunction(value)));
+        // Some of the subproperty watchers may need to update after a splice because their key
+        // (index) will have changed. For example, if there is an IWatchedArray at index 2 and a
+        // new item is inserted at index 1, any future mutations to that IWatchedArray should be
+        // reported as coming from index 3.
+        proxy.remapPropertyKeys((currentKey) => {
+            if (typeof (currentKey) == 'number') {
+                if (currentKey < startIndex) {
+                    return currentKey;
+                }
+                else if (currentKey < startIndex + deleteCount) {
+                    return null;
+                }
+                else {
+                    return currentKey + insertedItems.length;
+                }
+            }
+            else {
+                return currentKey;
+            }
+        });
+        const deletedItems = target.splice.apply(target, spliceArgs);
+        for (let i = 0; i < insertedItems.length; i++) {
+            if (insertedItems[i] instanceof rxjs_1.Observable) {
+                target[i + startIndex] = undefined;
+                proxy.watchObservableProperty(target, startIndex + i, insertedItems[i]);
+            }
+        }
+        proxy.mutations.next(new Mutations.ArraySpliceMutation(startIndex, deletedItems, insertedItems));
+    },
+};
 exports.ArrayProxyHandler = ArrayProxyHandler;

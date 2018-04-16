@@ -34,8 +34,8 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
 
     get(target: T[], property: PropertyKey) {
         // Override array functions
-        if (this.ARRAY_FUNCTION_OVERRIDES.hasOwnProperty(property)) {
-            let value = this.ARRAY_FUNCTION_OVERRIDES[property];
+        if (ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES.hasOwnProperty(property)) {
+            let value = ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES[property];
             if (value instanceof Function) {
                 value = value.bind(this, this, target);
             }
@@ -77,9 +77,9 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
 
     // ARRAY FUNCTION OVERRIDES
 
-    private ARRAY_FUNCTION_OVERRIDES = {
+    private static ARRAY_FUNCTION_OVERRIDES = {
 
-        push(proxy: ArrayProxyHandler<T>, target: T[], item: T | Observable<T>) {
+        push<T>(proxy: ArrayProxyHandler<T>, target: T[], item: T | Observable<T>) {
             target.push.call(target, undefined);
 
             if (item instanceof Observable) {
@@ -91,7 +91,7 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             proxy.mutations.next(new Mutations.ArraySpliceMutation(target.length - 1, [], [item]));
         },
         
-        splice(
+        splice<T>(
             proxy: ArrayProxyHandler<T>,
             target: T[],
             startIndex: number,

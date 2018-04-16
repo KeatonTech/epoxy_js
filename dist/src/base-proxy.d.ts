@@ -35,5 +35,5 @@ export declare abstract class BaseProxyHandler<T extends object> implements Prox
     protected abstract copyData(target: T): any;
     protected applyMutation(target: T, mutation: Mutation<any>): void;
     get(target: T, property: PropertyKey): any;
-    private LISTENABLE_FUNCTION_IMPL;
+    private static LISTENABLE_FUNCTION_IMPL;
 }
