@@ -2,9 +2,16 @@
   "name": "epoxyjs",
   "version": "1.0.0",
   "description": "Proxy-based reactive library for Javascript and Typescript",
-  "main": "index.js",
+  "main": "./dist/epoxy.js",
+  "types": "./dist/epoxy.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KeatonTech/epoxy_js"
+  },
   "scripts": {
-    "test": "mocha -r ts-node/register ./test/*.ts"
+    "build": "tsc",
+    "test": "mocha -r ts-node/register ./test/*.ts",
+    "test_dist": "tsc; mocha ./dist/test/*.js"
   },
   "author": "keaton.brandt@gmail.com",
   "license": "MIT",

@@ -37,7 +37,7 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
         if (this.ARRAY_FUNCTION_OVERRIDES.hasOwnProperty(property)) {
             let value = this.ARRAY_FUNCTION_OVERRIDES[property];
             if (value instanceof Function) {
-                value = value.bind(this, target);
+                value = value.bind(this, this, target);
             }
             return value;
         }
@@ -79,27 +79,35 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
 
     private ARRAY_FUNCTION_OVERRIDES = {
 
-        push(target: T[], item: T | Observable<T>) {
+        push(proxy: ArrayProxyHandler<T>, target: T[], item: T | Observable<T>) {
             target.push.call(target, undefined);
 
             if (item instanceof Observable) {
-                this.watchObservableProperty(target, target.length - 1, item);
+                proxy.watchObservableProperty(target, target.length - 1, item);
                 return;
             }
 
             target[target.length - 1] = item;
-            this.mutations.next(new Mutations.ArraySpliceMutation(target.length - 1, [], [item]));
+            proxy.mutations.next(new Mutations.ArraySpliceMutation(target.length - 1, [], [item]));
         },
         
-        splice(target: T[], startIndex: number, deleteCount: number, ...insertedItems: Array<T | Observable<T>>) {
+        splice(
+            proxy: ArrayProxyHandler<T>,
+            target: T[],
+            startIndex: number,
+            deleteCount: number,
+            ...insertedItems: Array<T | Observable<T>>
+        ) {
             const spliceArgs = [startIndex, deleteCount];
-            spliceArgs.push.apply(spliceArgs, insertedItems.map(this.listenFunction));
+            spliceArgs.push.apply(
+                spliceArgs,
+                insertedItems.map((value) => proxy.listenFunction(value as WatchType)));
 
             // Some of the subproperty watchers may need to update after a splice because their key
             // (index) will have changed. For example, if there is an IWatchedArray at index 2 and a
             // new item is inserted at index 1, any future mutations to that IWatchedArray should be
             // reported as coming from index 3.
-            this.remapPropertyKeys((currentKey: PropertyKey) => {
+            proxy.remapPropertyKeys((currentKey: PropertyKey) => {
                 if (typeof(currentKey) == 'number') {
                     if (currentKey < startIndex) {
                         return currentKey
@@ -116,12 +124,12 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             const deletedItems = target.splice.apply(target, spliceArgs);
             for (let i = 0; i < insertedItems.length; i++) {
                 if (insertedItems[i] instanceof Observable) {
-                    target[i + startIndex] = undefined;
-                    this.watchObservableProperty(target, startIndex + i, insertedItems[i]);
+                    (target[i + startIndex] as any) = undefined;
+                    proxy.watchObservableProperty(target, startIndex + i, insertedItems[i] as Observable<T>);
                 }
             }
 
-            this.mutations.next(new Mutations.ArraySpliceMutation(startIndex, deletedItems, insertedItems));
+            proxy.mutations.next(new Mutations.ArraySpliceMutation(startIndex, deletedItems, insertedItems));
         },
     };
 }
