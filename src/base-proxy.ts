@@ -3,6 +3,7 @@ import { WatchType, ListenableCollection, IListenable } from './types';
 import { Observable, Subject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { EpoxyGlobalState } from './global-state';
+import { computed } from './runners';
 
 /**
  * Base class for all data structure proxy handlers.
@@ -20,38 +21,64 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     public debugLabel: string;
 
     protected mutations: Subject<Mutation<T>> = new Subject();
-    protected subpropertySubscriptions: {[key: string]: Subscription, [key: number]: Subscription} = {};
-    private subpropertyKeys: Map<Symbol, PropertyKey> = new Map();
+    
+    // Stream subscriptions to IListenable instances or Observalbes contained in this structure.
+    protected propertySubscriptions: {[key: string]: Subscription, [key: number]: Subscription} = {};
+
+    // Allows subscription functions to be mapped to their current property key.
+    private propertyKeys: Map<Symbol, PropertyKey> = new Map();
 
 
     // WATCH SUBPROPERTY CHANGES
 
     protected watchSubpropertyChanges(key: PropertyKey, value: WatchType) {
         const keySymbol = Symbol();
-        this.subpropertyKeys.set(keySymbol, key);
+        this.propertyKeys.set(keySymbol, key);
 
-        if (this.subpropertySubscriptions[key] !== undefined) {
-            delete this.subpropertySubscriptions[key];
+        if (this.propertySubscriptions[key] !== undefined) {
+            this.propertySubscriptions[key].unsubscribe();
+            delete this.propertySubscriptions[key];
         }
 
         if ((value instanceof Array) || (value instanceof Object)) {
-            this.subpropertySubscriptions[key] = (value as IListenable<any>)
+            this.propertySubscriptions[key] = (value as IListenable<any>)
                 .listen()
                 .subscribe((mutation) => {
-                    const currentKey = this.subpropertyKeys.get(keySymbol);
+                    const currentKey = this.propertyKeys.get(keySymbol);
                     this.mutations.next(new SubpropertyMutation(currentKey, mutation));
                 })
         }
     }
 
-    protected removeSubpropertyWatcher(subpropertyKey: PropertyKey) {
-        if (!this.subpropertySubscriptions[subpropertyKey]) return;
-        this.subpropertySubscriptions[subpropertyKey].unsubscribe();
-        delete this.subpropertySubscriptions[subpropertyKey];
+    protected watchObservableProperty(target: T, key: PropertyKey, value: Observable<any>) {
+        const keySymbol = Symbol();
+        this.propertyKeys.set(keySymbol, key);
+
+        if (this.propertySubscriptions[key] !== undefined) {
+            this.propertySubscriptions[key].unsubscribe();
+            delete this.propertySubscriptions[key];
+        }
+
+        if ((value instanceof Array) || (value instanceof Object)) {
+            this.propertySubscriptions[key] = value.subscribe((newValue) => {
+                const currentKey = this.propertyKeys.get(keySymbol);
+                const oldValue = target[currentKey];
+                if (oldValue == newValue) return;
+
+                target[currentKey] = newValue;
+                this.mutations.next(new PropertyMutation(currentKey, oldValue, newValue));
+            });
+        }
+    }
+
+    protected removeSubpropertyWatcher(propertyKey: PropertyKey) {
+        if (!this.propertySubscriptions[propertyKey]) return;
+        this.propertySubscriptions[propertyKey].unsubscribe();
+        delete this.propertySubscriptions[propertyKey];
     }
 
     protected clearSubpropertyWatchers() {
-        Object.keys(this.subpropertySubscriptions).forEach((subpropertyKey) => {
+        Object.keys(this.propertySubscriptions).forEach((subpropertyKey) => {
             this.removeSubpropertyWatcher(subpropertyKey);
         });
     }
@@ -64,9 +91,9 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
      * @param mapperFunction Returns the new key that an existing one should map to, or null if the specific
      *  subproperty was deleted (which will cause removeSubpropertyWatcher() to be called automatically).
      */
-    protected remapSubpropertyKeys(mapperFunction: (currentKey: PropertyKey) => PropertyKey | null) {
+    protected remapPropertyKeys(mapperFunction: (currentKey: PropertyKey) => PropertyKey | null) {
         const newSubpropertyKeys = new Map<Symbol, PropertyKey>();
-        this.subpropertyKeys.forEach((currentKey: PropertyKey, symbol: Symbol) => {
+        this.propertyKeys.forEach((currentKey: PropertyKey, symbol: Symbol) => {
             const newKey = mapperFunction(currentKey);
             if (newKey === null) {
                 this.removeSubpropertyWatcher(currentKey);
@@ -74,7 +101,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                 newSubpropertyKeys.set(symbol, newKey);
             }
         });
-        this.subpropertyKeys = newSubpropertyKeys;
+        this.propertyKeys = newSubpropertyKeys;
     }
 
 
@@ -163,7 +190,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
          * Note that this involves making shallow copies and so should be used sparingly.
          */
         asObservable(target: T) {
-            return this.mutations.map((m) => this.copyData(target));
+            return this.mutations.map((m) => this.copyData(target)) as Observable<T>;
         },
         
         /**
@@ -173,6 +200,18 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
          */
         observables() {
             return this.observables();
+        },
+
+        /**
+         * Sets a property on this data structure to a computed value or an Observable. This is
+         * syntactic sugar that helps with type safety.
+         */
+        setComputed(target: T, key: PropertyKey, value: () => any | Observable<any>) {
+            if (value instanceof Function) {
+                this.watchObservableProperty(target, key, computed(value));
+            } else {
+                this.watchObservableProperty(target, key, value);
+            }
         },
 
         /**
@@ -201,5 +240,5 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                 });
             }
         }
-    } as IListenable<T>;
+    };
 }

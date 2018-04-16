@@ -22,6 +22,7 @@ export class EpoxyGlobalState {
         if (EpoxyGlobalState.trackingGetters) {
             throw new Error('Cannot create a computed property within another computed property');
         }
+        EpoxyGlobalState.consumedGetters = [];
         EpoxyGlobalState.trackingGetters = true;
         run();
         EpoxyGlobalState.trackingGetters = false;

@@ -1,4 +1,4 @@
-import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, PropertyMutation} from '../epoxy';
+import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, PropertyMutation, IListenableArray} from '../epoxy';
 import { expect } from 'chai';
 import { last } from 'rxjs/operators';
 // import mocha
@@ -145,5 +145,21 @@ describe('Array Watcher', () => {
         const deepListenableArray = makeListenable([[0, -1], [2, 3]]);
         deepListenableArray.unapplyMutation(new SubpropertyMutation(0, new PropertyMutation(1, 1, -1)));
         expect(deepListenableArray).eql([[0, 1], [2, 3]]);
+    });
+
+    it('can generate a reactive fibonnaci sequence', () => {
+        const fibonnaci = makeListenable([1, 1]) as IListenableArray<any>;
+        for (let i = 0; i < 10; i++) {
+            const n = i; // Make a new variable for each iteration.
+            fibonnaci.push(computed(() => fibonnaci[n] + fibonnaci[n + 1]));
+        }
+
+        expect(fibonnaci).eql([1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]);
+
+        fibonnaci[0] = 0;
+        expect(fibonnaci).eql([0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]);
+
+        fibonnaci[1] = 0;
+        expect(fibonnaci).eql([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     });
 });

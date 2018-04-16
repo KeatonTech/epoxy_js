@@ -28,7 +28,12 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         return super.get(target, property) || target[property];
     }
 
-    set(target: T, property: PropertyKey, value: T) {
+    set(target: T, property: PropertyKey, value: T | Observable<T>) {
+        if (value instanceof Observable) {
+            this.watchObservableProperty(target, property, value);
+            return true;
+        }
+
         const oldValue = target[property];
         const newValue = this.listenFunction(value as any);
         target[property] = newValue as T;

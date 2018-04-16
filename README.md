@@ -63,3 +63,24 @@ values.multiplier = 5;
 expect(lastTotal).equals(55);
 
 ```
+
+Computed properties (or any other observables) can be added to any listenable data structure as
+normal values. Whenever the observable adds a new value the property value of the container will
+automatically update. In an extreme example, this can be used to generate a reactive version of
+the fibonacci sequence, where each value is computed from the two values before it.
+
+```javascript
+const fibonnaci = makeListenable([1, 1]) as IListenableArray<any>;
+for (let i = 0; i < 10; i++) {
+    const n = i; // Make a new variable for each iteration.
+    fibonnaci.push(computed(() => fibonnaci[n] + fibonnaci[n + 1]));
+}
+
+expect(fibonnaci).eql([1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]);
+
+fibonnaci[0] = 0;
+expect(fibonnaci).eql([0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]);
+
+fibonnaci[1] = 0;
+expect(fibonnaci).eql([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+```

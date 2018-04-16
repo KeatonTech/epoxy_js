@@ -129,6 +129,34 @@ describe('Object Watcher', () => {
         expect(sumValues[2]).equals(0);
     });
 
+    it('should be able to contain computed properties', () => {
+        const listenableObject = makeListenable({a: 1, b: 1});
+        listenableObject['sum'] = computed(() => listenableObject['a'] + listenableObject['b']);
+
+        let mutationsCount = 0;
+        listenableObject.listen().subscribe((mutation) => mutationsCount++);
+
+        listenableObject['a'] = 10;
+        expect(listenableObject['sum']).equals(11);
+        expect(mutationsCount).equals(2);
+
+        listenableObject['sum'] = Infinity;
+        expect(listenableObject['sum']).equals(Infinity);
+        expect(mutationsCount).equals(3);
+
+        listenableObject['a'] = 0;
+        expect(listenableObject['sum']).equals(Infinity);
+        expect(mutationsCount).equals(4);
+
+        listenableObject.setComputed('sum', () => listenableObject['a'] + listenableObject['b']);
+        expect(listenableObject['sum']).equals(1);
+        expect(mutationsCount).equals(5);
+
+        listenableObject['a'] = 10;
+        expect(listenableObject['sum']).equals(11);
+        expect(mutationsCount).equals(7);
+    });
+
     it('should be able to apply mutations', () => {
         const listenableObject = makeListenable({a: 1, b: 2});
         

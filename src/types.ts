@@ -28,6 +28,12 @@ export interface IListenable<T> {
     observables(): Array<Observable<T>>;
 
     /**
+     * Sets a property on this data structure to a computed value or an Observable. This is
+     * syntactic sugar that helps with type safety.
+     */
+    setComputed(key: PropertyKey, computed: () => any | Observable<any>): void;
+
+    /**
      * Applies a given mutation to this collection.
      */
     applyMutation(mutation: Mutations.Mutation<any>): void;
