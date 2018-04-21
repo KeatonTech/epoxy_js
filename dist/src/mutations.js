@@ -6,6 +6,14 @@ class Mutation {
     }
 }
 exports.Mutation = Mutation;
+class ValueMutation extends Mutation {
+    constructor(oldValue, newValue) {
+        super(null);
+        this.oldValue = oldValue;
+        this.newValue = newValue;
+    }
+}
+exports.ValueMutation = ValueMutation;
 class PropertyMutation extends Mutation {
     constructor(key, oldValue, newValue) {
         super(key);
@@ -36,6 +44,9 @@ exports.ArraySpliceMutation = ArraySpliceMutation;
 function invertMutation(mutation) {
     if (mutation instanceof PropertyMutation) {
         return new PropertyMutation(mutation.key, mutation.newValue, mutation.oldValue);
+    }
+    else if (mutation instanceof ValueMutation) {
+        return new ValueMutation(mutation.newValue, mutation.oldValue);
     }
     else if (mutation instanceof ArraySpliceMutation) {
         return new ArraySpliceMutation(mutation.key, mutation.inserted, mutation.deleted);

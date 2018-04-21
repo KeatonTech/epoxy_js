@@ -1,6 +1,14 @@
 import { ListenableCollection, IListenableObject, IListenableArray, IListenable } from './types';
 import { Mutation } from './mutations';
 /**
+ * Interface for debug data.
+ */
+export declare class DebugEvent {
+    mutation: Mutation<any>;
+    stack: string;
+    timestamp: number;
+}
+/**
  * Global state used to track getter calls for computed values.
  */
 export declare class EpoxyGlobalState {
@@ -12,6 +20,7 @@ export declare class EpoxyGlobalState {
     private static _isBatching;
     static isBatching: boolean;
     static markChangedDuringBatch(collection: IListenable<any>): void;
-    static readonly DebugData: IListenableObject<IListenableArray<Mutation<any>>>;
+    private static debugDataInternal;
+    static readonly DebugData: IListenableObject<IListenableArray<DebugEvent>>;
     static logDebugMutation(label: string, mutation: Mutation<any>): void;
 }

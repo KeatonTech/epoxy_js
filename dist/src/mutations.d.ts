@@ -2,6 +2,11 @@ export declare abstract class Mutation<T> {
     key: PropertyKey;
     constructor(key: PropertyKey);
 }
+export declare class ValueMutation<T> extends Mutation<T> {
+    oldValue: T;
+    newValue: T;
+    constructor(oldValue: T, newValue: T);
+}
 export declare class PropertyMutation<T> extends Mutation<T> {
     oldValue: T;
     newValue: T;

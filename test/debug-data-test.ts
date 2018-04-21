@@ -24,13 +24,15 @@ describe('Global DebugData', () => {
 
         const mutationList = EpoxyGlobalState.DebugData['array'];
         expect(mutationList).length(1);
-        expect(mutationList[0] instanceof ValueMutation);
-        expect(mutationList[0].newValue).eql([1, 1, 2, 3]);
+        expect(mutationList[0].stack).not.null;
+        expect(mutationList[0].mutation instanceof ValueMutation).true;
+        expect(mutationList[0].mutation.newValue).eql([1, 1, 2, 3]);
 
         listenableArray.push(5);
         expect(mutationList).length(2);
-        expect(mutationList[1] instanceof ArraySpliceMutation);
-        expect(mutationList[1].inserted).eql([5]);
+        expect(mutationList[1].stack).not.null;
+        expect(mutationList[1].mutation instanceof ArraySpliceMutation).true;
+        expect(mutationList[1].mutation.inserted).eql([5]);
     });
 
     it('should keep a list of all mutations to object', () => {
@@ -39,13 +41,15 @@ describe('Global DebugData', () => {
 
         const mutationList = EpoxyGlobalState.DebugData['object'];
         expect(mutationList).length(1);
-        expect(mutationList[0] instanceof ValueMutation);
-        expect(mutationList[0].newValue).eql({a: 'a', b: 'b'});
+        expect(mutationList[0].stack).not.null;
+        expect(mutationList[0].mutation instanceof ValueMutation).true;
+        expect(mutationList[0].mutation.newValue).eql({a: 'a', b: 'b'});
 
         listenableObject['c'] = 'c';
         expect(mutationList).length(2);
-        expect(mutationList[1] instanceof PropertyMutation);
-        expect(mutationList[1].key).equals('c');
-        expect(mutationList[1].newValue).equals('c');
+        expect(mutationList[1].stack).not.null;
+        expect(mutationList[1].mutation instanceof PropertyMutation).true;;
+        expect(mutationList[1].mutation.key).equals('c');
+        expect(mutationList[1].mutation.newValue).equals('c');
     });
 });

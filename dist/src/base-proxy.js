@@ -126,6 +126,9 @@ class BaseProxyHandler {
         if (mutation instanceof mutations_1.SubpropertyMutation) {
             target[mutation.key].applyMutation(mutation.mutation);
         }
+        else if (mutation instanceof mutations_1.ValueMutation) {
+            target = mutation.newValue;
+        }
         else if (mutation instanceof mutations_1.PropertyMutation) {
             target[mutation.key] = mutation.newValue;
         }
@@ -197,9 +200,10 @@ BaseProxyHandler.LISTENABLE_FUNCTION_IMPL = {
     /**
      * Gives this listenable a unique value that can be displayed in debug tools.
      */
-    debugWithLabel(handler, label) {
+    debugWithLabel(handler, target, label) {
         const hadPreviousLabel = !!handler.debugLabel;
         handler.debugLabel = label;
+        global_state_1.EpoxyGlobalState.logDebugMutation(handler.debugLabel, new mutations_1.ValueMutation(null, target));
         if (!hadPreviousLabel) {
             handler.mutations.subscribe((mutation) => {
                 global_state_1.EpoxyGlobalState.logDebugMutation(handler.debugLabel, mutation);

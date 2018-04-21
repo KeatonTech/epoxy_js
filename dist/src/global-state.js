@@ -2,6 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const make_listenable_1 = require("./make-listenable");
 /**
+ * Interface for debug data.
+ */
+class DebugEvent {
+}
+exports.DebugEvent = DebugEvent;
+/**
  * Global state used to track getter calls for computed values.
  */
 class EpoxyGlobalState {
@@ -39,15 +45,21 @@ class EpoxyGlobalState {
     static markChangedDuringBatch(collection) {
         this.changedInBatch.add(collection);
     }
-    // DEBUGGING TOOLS
     static get DebugData() {
-        return make_listenable_1.makeListenable({});
+        if (!EpoxyGlobalState.debugDataInternal) {
+            EpoxyGlobalState.debugDataInternal = make_listenable_1.makeListenable({});
+        }
+        return EpoxyGlobalState.debugDataInternal;
     }
     static logDebugMutation(label, mutation) {
         if (!EpoxyGlobalState.DebugData.hasOwnProperty(label)) {
             EpoxyGlobalState.DebugData[label] = make_listenable_1.makeListenable([]);
         }
-        EpoxyGlobalState.DebugData[label].push(mutation);
+        EpoxyGlobalState.DebugData[label].push({
+            mutation,
+            stack: new Error().stack,
+            timestamp: Date.now(),
+        });
     }
 }
 // GETTER TRACKING

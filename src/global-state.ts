@@ -3,6 +3,15 @@ import { Mutation } from './mutations';
 import { makeListenable } from './make-listenable';
 
 /**
+ * Interface for debug data.
+ */
+export class DebugEvent {
+    mutation: Mutation<any>;
+    stack: string;
+    timestamp: number;
+}
+
+/**
  * Global state used to track getter calls for computed values.
  */
 export class EpoxyGlobalState {
@@ -61,9 +70,9 @@ export class EpoxyGlobalState {
 
     // DEBUGGING TOOLS
 
-    private static debugDataInternal: IListenableObject<IListenableArray<Mutation<any>>>;
+    private static debugDataInternal: IListenableObject<IListenableArray<DebugEvent>>;
 
-    static get DebugData(): IListenableObject<IListenableArray<Mutation<any>>> {
+    static get DebugData(): IListenableObject<IListenableArray<DebugEvent>> {
         if (!EpoxyGlobalState.debugDataInternal) {
             EpoxyGlobalState.debugDataInternal = makeListenable({});
         }
@@ -74,6 +83,10 @@ export class EpoxyGlobalState {
         if (!EpoxyGlobalState.DebugData.hasOwnProperty(label)) {
             EpoxyGlobalState.DebugData[label] = makeListenable([]);
         }
-        EpoxyGlobalState.DebugData[label].push(mutation);
+        EpoxyGlobalState.DebugData[label].push({
+            mutation,
+            stack: new Error().stack,
+            timestamp: Date.now(),
+        });
     }
 }
