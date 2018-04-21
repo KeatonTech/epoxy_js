@@ -1,6 +1,6 @@
 {
   "name": "epoxyjs",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Proxy-based reactive library for Javascript and Typescript",
   "main": "./dist/epoxy.js",
   "types": "./dist/epoxy.d.ts",
@@ -16,6 +16,7 @@
   "author": "keaton.brandt@gmail.com",
   "license": "MIT",
   "dependencies": {
+    "npm": "^5.8.0",
     "rxjs": "^5.5.8"
   },
   "devDependencies": {

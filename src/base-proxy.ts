@@ -1,4 +1,4 @@
-import { PropertyMutation, Mutation, SubpropertyMutation, invertMutation } from './mutations';
+import { PropertyMutation, Mutation, SubpropertyMutation, invertMutation, ValueMutation } from './mutations';
 import { WatchType, ListenableCollection, IListenable } from './types';
 import { Observable, Subject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -159,6 +159,8 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     protected applyMutation(target: T, mutation: Mutation<any>) {
         if (mutation instanceof SubpropertyMutation) {
             target[mutation.key].applyMutation(mutation.mutation);
+        } else if (mutation instanceof ValueMutation) {
+            target = mutation.newValue;
         } else if (mutation instanceof PropertyMutation) {
             target[mutation.key] = mutation.newValue;
         } else {
@@ -245,9 +247,10 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         /**
          * Gives this listenable a unique value that can be displayed in debug tools.
          */
-        debugWithLabel<T extends object>(handler: BaseProxyHandler<T>, label: string) {
+        debugWithLabel<T extends object>(handler: BaseProxyHandler<T>, target: T, label: string) {
             const hadPreviousLabel = !!handler.debugLabel;
             handler.debugLabel = label;
+            EpoxyGlobalState.logDebugMutation(handler.debugLabel, new ValueMutation(null, target));
             if (!hadPreviousLabel) {
                 handler.mutations.subscribe((mutation) => {
                     EpoxyGlobalState.logDebugMutation(handler.debugLabel, mutation);

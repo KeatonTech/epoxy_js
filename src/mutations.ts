@@ -4,6 +4,15 @@ export abstract class Mutation<T> {
     ) {}
 }
 
+export class ValueMutation<T> extends Mutation<T> {
+    constructor(
+        public oldValue: T,
+        public newValue: T,
+    ) {
+        super(null);
+    }
+}
+
 export class PropertyMutation<T> extends Mutation<T> {
     constructor(
         key: PropertyKey,
@@ -42,6 +51,8 @@ export class ArraySpliceMutation<T> extends Mutation<T> {
 export function invertMutation<T>(mutation: Mutation<T>): Mutation<T> {
     if (mutation instanceof PropertyMutation) {
         return new PropertyMutation<T>(mutation.key, mutation.newValue, mutation.oldValue);
+    } else if (mutation instanceof ValueMutation) {
+        return new ValueMutation<T>(mutation.newValue, mutation.oldValue);
     } else if (mutation instanceof ArraySpliceMutation) {
         return new ArraySpliceMutation<T>(mutation.key as number, mutation.inserted, mutation.deleted);
     } else if (mutation instanceof SubpropertyMutation) {

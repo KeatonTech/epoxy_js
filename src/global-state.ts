@@ -61,8 +61,13 @@ export class EpoxyGlobalState {
 
     // DEBUGGING TOOLS
 
+    private static debugDataInternal: IListenableObject<IListenableArray<Mutation<any>>>;
+
     static get DebugData(): IListenableObject<IListenableArray<Mutation<any>>> {
-        return makeListenable({});
+        if (!EpoxyGlobalState.debugDataInternal) {
+            EpoxyGlobalState.debugDataInternal = makeListenable({});
+        }
+        return EpoxyGlobalState.debugDataInternal;
     }
 
     public static logDebugMutation(label: string, mutation: Mutation<any>) {
