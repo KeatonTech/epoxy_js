@@ -1,6 +1,7 @@
-import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, PropertyMutation, IListenableArray} from '../epoxy';
+import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, PropertyMutation, IListenableArray, ValueMutation} from '../epoxy';
 import { expect } from 'chai';
 import { last } from 'rxjs/operators';
+import { ReadonlyException } from '../src/readonly-proxy';
 // import mocha
 
 describe('Array Watcher', () => {
@@ -161,5 +162,30 @@ describe('Array Watcher', () => {
 
         fibonnaci[1] = 0;
         expect(fibonnaci).eql([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    });
+
+    it('can create a readonly copy', () => {
+        const numbers = makeListenable([1, 2, 3, 4]);
+        const readonly = numbers.asReadonly();
+
+        expect(() => readonly[0] = 2).throws(ReadonlyException);
+        expect(() => readonly.push(5)).throws(ReadonlyException);
+        expect(() => delete readonly[1]).throws(ReadonlyException);
+        expect(() => readonly.applyMutation(new ValueMutation(1, 2))).throws(ReadonlyException);
+    });
+
+    it('the readonly copy keeps up with mutations to the original', () => {
+        let lastMutation: Mutation<string>;
+        const listenableArray = makeListenable([]);
+        const readonly = listenableArray.asReadonly();
+        readonly.listen().subscribe((mutation) => lastMutation = mutation);
+
+        listenableArray.push('hey');
+        expect(lastMutation).instanceof(ArraySpliceMutation);
+        if (lastMutation instanceof ArraySpliceMutation) {
+            expect(lastMutation.key).equals(0);
+            expect(lastMutation.deleted).eql([]);
+            expect(lastMutation.inserted).eql(['hey']);
+        }
     });
 });

@@ -1,5 +1,5 @@
 /// <reference types="chai" />
-import { WatchType } from './types';
+import { WatchType, IListenableObject, TypedObject } from './types';
 import { BaseProxyHandler } from './base-proxy';
 import { Observable } from 'rxjs';
 /**
@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 export declare class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
     private initialValues;
     constructor(listenFunction: (input: WatchType) => any, initialValues: T);
+    static createProxy<T extends object>(initialValue?: TypedObject<T>): IListenableObject<T>;
     copyData(target: Object): {
         constructor: Function;
         toString(): string;

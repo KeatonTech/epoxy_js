@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const epoxy_1 = require("../epoxy");
 const chai_1 = require("chai");
+const readonly_proxy_1 = require("../src/readonly-proxy");
 // import mocha
 describe('Array Watcher', () => {
     it('should trigger an ArraySpliceMutation on the push() function', () => {
@@ -129,5 +130,26 @@ describe('Array Watcher', () => {
         chai_1.expect(fibonnaci).eql([0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]);
         fibonnaci[1] = 0;
         chai_1.expect(fibonnaci).eql([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    });
+    it('can create a readonly copy', () => {
+        const numbers = epoxy_1.makeListenable([1, 2, 3, 4]);
+        const readonly = numbers.asReadonly();
+        chai_1.expect(() => readonly[0] = 2).throws(readonly_proxy_1.ReadonlyException);
+        chai_1.expect(() => readonly.push(5)).throws(readonly_proxy_1.ReadonlyException);
+        chai_1.expect(() => delete readonly[1]).throws(readonly_proxy_1.ReadonlyException);
+        chai_1.expect(() => readonly.applyMutation(new epoxy_1.ValueMutation(1, 2))).throws(readonly_proxy_1.ReadonlyException);
+    });
+    it('the readonly copy keeps up with mutations to the original', () => {
+        let lastMutation;
+        const listenableArray = epoxy_1.makeListenable([]);
+        const readonly = listenableArray.asReadonly();
+        readonly.listen().subscribe((mutation) => lastMutation = mutation);
+        listenableArray.push('hey');
+        chai_1.expect(lastMutation).instanceof(epoxy_1.ArraySpliceMutation);
+        if (lastMutation instanceof epoxy_1.ArraySpliceMutation) {
+            chai_1.expect(lastMutation.key).equals(0);
+            chai_1.expect(lastMutation.deleted).eql([]);
+            chai_1.expect(lastMutation.inserted).eql(['hey']);
+        }
     });
 });

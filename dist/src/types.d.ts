@@ -1,25 +1,33 @@
 import * as Mutations from './mutations';
 import { Observable } from 'rxjs';
+export declare type TypedObject<T> = {
+    [key: string]: T;
+    [key: number]: T;
+};
 /**
  * Extended interface for proxied arrays granting access to the change stream.
  */
-export interface IListenable<T> {
+export interface IListenable<STRUCTURE_TYPE, OBSERVABLES_TYPE, LISTENABLE_TYPE> {
     /**
      * Returns a stream of all mutation events on this Array instance, including changes to any
      * of its subproperties.
      */
-    listen(): Observable<Mutations.Mutation<T>>;
+    listen(): Observable<Mutations.Mutation<STRUCTURE_TYPE>>;
     /**
      * Returns an observable that updates whenever this data structure is mutated in any way.
      * Note that this involves making shallow copies and so should be used sparingly.
      */
-    asObservable(): Observable<Array<T>>;
+    asObservable(): Observable<STRUCTURE_TYPE>;
     /**
      * Returns an Array that contains the same data as this array, except all of its properties
      * are observables rather than raw values. This is useful for plugging the structure into
      * consumers such as UI frameworks.
      */
-    observables(): Array<Observable<T>>;
+    observables(): OBSERVABLES_TYPE;
+    /**
+     * Returns a version of the listenable data structure that cannot be directly modified.
+     */
+    asReadonly(): LISTENABLE_TYPE;
     /**
      * Sets a property on this data structure to a computed value or an Observable. This is
      * syntactic sugar that helps with type safety.
@@ -43,14 +51,19 @@ export interface IListenable<T> {
     broadcastCurrentValue(): void;
 }
 /**
+ * Interface to check if something is listenable.
+ */
+export interface IGenericListenable extends IListenable<any, any, any> {
+}
+/**
  * Extended interface for proxied arrays granting access to the change stream.
  */
-export interface IListenableArray<T> extends IListenable<T>, Array<T> {
+export interface IListenableArray<T> extends Array<T>, IListenable<T[], Array<Observable<T>>, IListenableArray<T>> {
 }
 /**
  * Extended interface for proxied objects granting access to the change stream.
  */
-export interface IListenableObject<T> extends IListenable<T>, Object {
+export interface IListenableObject<T> extends Object, IListenable<TypedObject<T>, TypedObject<Observable<T>>, IListenableObject<T>> {
 }
 /**
  * Any listenable collection.

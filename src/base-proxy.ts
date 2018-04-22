@@ -1,9 +1,10 @@
 import { PropertyMutation, Mutation, SubpropertyMutation, invertMutation, ValueMutation } from './mutations';
-import { WatchType, ListenableCollection, IListenable } from './types';
+import { WatchType, ListenableCollection, IGenericListenable, TypedObject, IListenableArray } from './types';
 import { Observable, Subject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { EpoxyGlobalState } from './global-state';
 import { computed } from './runners';
+import { ReadonlyArrayProxyHandler, ReadonlyProxyHandler } from './readonly-proxy';
 
 /**
  * Base class for all data structure proxy handlers.
@@ -31,7 +32,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     protected mutations: Subject<Mutation<T>> = new Subject();
     
     // Stream subscriptions to IListenable instances or Observalbes contained in this structure.
-    protected propertySubscriptions: {[key: string]: Subscription, [key: number]: Subscription} = {};
+    protected propertySubscriptions: TypedObject<Subscription> = {};
 
     // Allows subscription functions to be mapped to their current property key.
     private propertyKeys: Map<Symbol, PropertyKey> = new Map();
@@ -49,7 +50,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         }
 
         if ((value instanceof Array) || (value instanceof Object)) {
-            this.propertySubscriptions[key] = (value as IListenable<any>)
+            this.propertySubscriptions[key] = (value as IGenericListenable)
                 .listen()
                 .subscribe((mutation) => {
                     const currentKey = this.propertyKeys.get(keySymbol);
@@ -211,6 +212,17 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
          */
         observables<T extends object>(handler: BaseProxyHandler<T>) {
             return handler.observables();
+        },
+
+        /**
+         * Returns a version of the listenable data structure that cannot be directly modified.
+         */
+        asReadonly<T extends object>(handler: BaseProxyHandler<T>, target: T) {
+            if (target instanceof Array) {
+                return new Proxy(handler.output as IListenableArray<any>, new ReadonlyArrayProxyHandler());
+            } else {
+                return new Proxy(handler.output, new ReadonlyProxyHandler());
+            }
         },
 
         /**

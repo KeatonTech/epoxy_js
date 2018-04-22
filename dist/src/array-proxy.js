@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const Mutations = require("./mutations");
+const make_listenable_1 = require("./make-listenable");
 const base_proxy_1 = require("./base-proxy");
 const rxjs_1 = require("rxjs");
 /**
@@ -11,6 +12,13 @@ class ArrayProxyHandler extends base_proxy_1.BaseProxyHandler {
         super(listenFunction);
         this.initialValues = initialValues;
         initialValues.forEach((value, index) => this.watchSubpropertyChanges(index, value));
+    }
+    static createProxy(initialValue = []) {
+        const watchedInput = initialValue.map(make_listenable_1.makeListenable);
+        const handler = new ArrayProxyHandler(make_listenable_1.makeListenable, watchedInput);
+        const output = new Proxy(watchedInput, handler);
+        handler.setOutput(output);
+        return output;
     }
     copyData(target) {
         return target.slice();

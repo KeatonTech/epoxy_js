@@ -1,5 +1,5 @@
 import { Mutation } from './mutations';
-import { WatchType, ListenableCollection } from './types';
+import { WatchType, ListenableCollection, TypedObject } from './types';
 import { Observable, Subject, Subscription } from 'rxjs';
 /**
  * Base class for all data structure proxy handlers.
@@ -12,10 +12,7 @@ export declare abstract class BaseProxyHandler<T extends object> implements Prox
     debugLabel: string;
     protected changeSubject: Subject<T>;
     protected mutations: Subject<Mutation<T>>;
-    protected propertySubscriptions: {
-        [key: string]: Subscription;
-        [key: number]: Subscription;
-    };
+    protected propertySubscriptions: TypedObject<Subscription>;
     private propertyKeys;
     protected watchSubpropertyChanges(key: PropertyKey, value: WatchType): void;
     protected watchObservableProperty(target: T, key: PropertyKey, value: Observable<any>): void;

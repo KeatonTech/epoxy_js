@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const epoxy_1 = require("../epoxy");
 const chai_1 = require("chai");
+const readonly_proxy_1 = require("../src/readonly-proxy");
 // import mocha
 describe('Object Watcher', () => {
     it('should trigger a PropertyMutation when a value is added', () => {
@@ -143,5 +144,25 @@ describe('Object Watcher', () => {
         const deeplistenableObject = epoxy_1.makeListenable({ obj: { a: -1, b: 2 } });
         deeplistenableObject.unapplyMutation(new epoxy_1.SubpropertyMutation('obj', new epoxy_1.PropertyMutation('a', 1, -1)));
         chai_1.expect(deeplistenableObject).eql({ obj: { a: 1, b: 2 } });
+    });
+    it('can create a readonly copy', () => {
+        const object = epoxy_1.makeListenable({ a: 'a', b: 'b' });
+        const readonly = object.asReadonly();
+        chai_1.expect(() => readonly['c'] = 'c').throws(readonly_proxy_1.ReadonlyException);
+        chai_1.expect(() => delete readonly['a']).throws(readonly_proxy_1.ReadonlyException);
+        chai_1.expect(() => readonly.applyMutation(new epoxy_1.ValueMutation(1, 2))).throws(readonly_proxy_1.ReadonlyException);
+    });
+    it('the readonly copy keeps up with mutations to the original', () => {
+        let lastMutation;
+        const listenableObject = epoxy_1.makeListenable({ a: 'a', b: 'a' });
+        const readonly = listenableObject.asReadonly();
+        readonly.listen().subscribe((mutation) => lastMutation = mutation);
+        listenableObject['b'] = 'b';
+        chai_1.expect(lastMutation).instanceof(epoxy_1.PropertyMutation);
+        if (lastMutation instanceof epoxy_1.PropertyMutation) {
+            chai_1.expect(lastMutation.key).equals('b');
+            chai_1.expect(lastMutation.oldValue).equals('a');
+            chai_1.expect(lastMutation.newValue).equals('b');
+        }
     });
 });

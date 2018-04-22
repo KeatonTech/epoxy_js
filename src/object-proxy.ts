@@ -1,5 +1,6 @@
 import * as Mutations from './mutations';
-import {IListenableArray, WatchType, IListenableObject} from './types';
+import {makeListenable} from './make-listenable';
+import {IListenableArray, WatchType, IListenableObject, TypedObject} from './types';
 import {BaseProxyHandler} from './base-proxy';
 import {Observable, Subject} from 'rxjs';
 
@@ -15,6 +16,17 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         Object.keys(initialValues).forEach((key: PropertyKey) => {
             this.watchSubpropertyChanges(key, initialValues[key]);
         });
+    }
+
+    static createProxy<T extends object>(initialValue: TypedObject<T> = {}) {
+        const watchedInput = {};
+        for (let key in initialValue) {
+            watchedInput[key as string] = makeListenable(initialValue[key]);
+        }
+        const handler = new ObjectProxyHandler(makeListenable, watchedInput);
+        const output = new Proxy(watchedInput, handler) as IListenableObject<WatchType>;
+        handler.setOutput(output);
+        return output as IListenableObject<T>;
     }
 
     copyData(target: Object) {

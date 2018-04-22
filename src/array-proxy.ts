@@ -1,4 +1,5 @@
 import * as Mutations from './mutations';
+import {makeListenable} from './make-listenable';
 import {IListenableArray, WatchType} from './types';
 import {BaseProxyHandler} from './base-proxy';
 import {Observable, Subject} from 'rxjs';
@@ -13,6 +14,14 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
     ) {
        super(listenFunction);
        initialValues.forEach((value, index) => this.watchSubpropertyChanges(index, value));
+    }
+
+    static createProxy<T extends WatchType>(initialValue: T[] = []) {
+        const watchedInput = initialValue.map(makeListenable) as Array<WatchType>;
+        const handler = new ArrayProxyHandler(makeListenable, watchedInput);
+        const output = new Proxy(watchedInput, handler) as IListenableArray<WatchType>;
+        handler.setOutput(output);
+        return output as IListenableArray<T>;
     }
 
     copyData(target: T[]) {

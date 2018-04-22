@@ -1,4 +1,4 @@
-import {ListenableCollection, IListenableObject, IListenableArray, IListenable} from './types';
+import {ListenableCollection, IListenableObject, IListenableArray, IGenericListenable} from './types';
 import { Mutation } from './mutations';
 import { makeListenable } from './make-listenable';
 
@@ -49,7 +49,7 @@ export class EpoxyGlobalState {
 
     // OPERATION BATCHING
 
-    private static changedInBatch: Set<IListenable<any>> = new Set();
+    private static changedInBatch: Set<IGenericListenable> = new Set();
     private static _isBatching: boolean;
 
 
@@ -63,7 +63,7 @@ export class EpoxyGlobalState {
         this._isBatching = newIsBatching;
     }
 
-    static markChangedDuringBatch(collection: IListenable<any>) {
+    static markChangedDuringBatch(collection: IGenericListenable) {
         this.changedInBatch.add(collection);
     }
 

@@ -5,6 +5,7 @@ const rxjs_1 = require("rxjs");
 const operators_1 = require("rxjs/operators");
 const global_state_1 = require("./global-state");
 const runners_1 = require("./runners");
+const readonly_proxy_1 = require("./readonly-proxy");
 /**
  * Base class for all data structure proxy handlers.
  */
@@ -172,6 +173,17 @@ BaseProxyHandler.LISTENABLE_FUNCTION_IMPL = {
      */
     observables(handler) {
         return handler.observables();
+    },
+    /**
+     * Returns a version of the listenable data structure that cannot be directly modified.
+     */
+    asReadonly(handler, target) {
+        if (target instanceof Array) {
+            return new Proxy(handler.output, new readonly_proxy_1.ReadonlyArrayProxyHandler());
+        }
+        else {
+            return new Proxy(handler.output, new readonly_proxy_1.ReadonlyProxyHandler());
+        }
     },
     /**
      * Sets a property on this data structure to a computed value or an Observable. This is
