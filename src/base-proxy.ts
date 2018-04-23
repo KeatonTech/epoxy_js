@@ -186,8 +186,6 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
             }
             return value;
         }
-
-        EpoxyGlobalState.registerGetterCall(this.output, property);
     }
 
 

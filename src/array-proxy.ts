@@ -3,6 +3,7 @@ import {makeListenable} from './make-listenable';
 import {IListenableArray, WatchType} from './types';
 import {BaseProxyHandler} from './base-proxy';
 import {Observable, Subject} from 'rxjs';
+import {EpoxyGlobalState} from './global-state';
 
 /**
  * Proxy handler for Array objects.
@@ -51,6 +52,7 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             if (value instanceof Function) {
                 value = value.bind(this, this, target);
             }
+            EpoxyGlobalState.registerGetterCall(this.output, property);
             return value;
         }
 
@@ -60,6 +62,7 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             const numericalProperty = Number(property);
             property = isNaN(numericalProperty) ? property : numericalProperty;
         }
+        EpoxyGlobalState.registerGetterCall(this.output, property);
         return super.get(target, property) || target[property];
     }
 

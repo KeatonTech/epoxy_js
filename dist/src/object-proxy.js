@@ -4,6 +4,7 @@ const Mutations = require("./mutations");
 const make_listenable_1 = require("./make-listenable");
 const base_proxy_1 = require("./base-proxy");
 const rxjs_1 = require("rxjs");
+const epoxy_1 = require("../epoxy");
 /**
  * Proxy handler for Array objects.
  */
@@ -30,6 +31,7 @@ class ObjectProxyHandler extends base_proxy_1.BaseProxyHandler {
     }
     // PROXY FUNCTIONS
     get(target, property) {
+        epoxy_1.EpoxyGlobalState.registerGetterCall(this.output, property);
         return super.get(target, property) || target[property];
     }
     set(target, property, value) {

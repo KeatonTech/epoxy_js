@@ -151,7 +151,6 @@ class BaseProxyHandler {
             }
             return value;
         }
-        global_state_1.EpoxyGlobalState.registerGetterCall(this.output, property);
     }
 }
 // ILISTENABLE FUNCTIONALITY

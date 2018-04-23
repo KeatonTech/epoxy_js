@@ -1,6 +1,6 @@
 import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, ReadonlyException, PropertyMutation, IListenableArray, ValueMutation} from '../epoxy';
 import { expect } from 'chai';
-import { last } from 'rxjs/operators';
+import { last, reduce } from 'rxjs/operators';
 import { Subject, BehaviorSubject, Observable } from 'rxjs';
 // import mocha
 
@@ -223,5 +223,17 @@ describe('Array Watcher', () => {
             expect(lastMutation.deleted).eql([]);
             expect(lastMutation.inserted).eql(['hey']);
         }
+    });
+
+    it('can create computed reducers', () => {
+        const numbers = makeListenable([100, 10, 1]);
+        const sum = computed(() => numbers.reduce((a, i) => a + i));
+
+        let lastSumValue: number;
+        sum.subscribe((val) => lastSumValue = val);
+        expect(lastSumValue).equals(111);
+
+        numbers.push(1000);
+        expect(lastSumValue).equals(1111);
     });
 });

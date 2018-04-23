@@ -3,6 +3,7 @@ import {makeListenable} from './make-listenable';
 import {IListenableArray, WatchType, IListenableObject, TypedObject} from './types';
 import {BaseProxyHandler} from './base-proxy';
 import {Observable, Subject} from 'rxjs';
+import { EpoxyGlobalState } from '../epoxy';
 
 /**
  * Proxy handler for Array objects.
@@ -37,6 +38,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
     // PROXY FUNCTIONS
 
     get(target: T, property: PropertyKey) {
+        EpoxyGlobalState.registerGetterCall(this.output, property);
         return super.get(target, property) || target[property];
     }
 

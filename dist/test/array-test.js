@@ -179,4 +179,13 @@ describe('Array Watcher', () => {
             chai_1.expect(lastMutation.inserted).eql(['hey']);
         }
     });
+    it('can create computed reducers', () => {
+        const numbers = epoxy_1.makeListenable([100, 10, 1]);
+        const sum = epoxy_1.computed(() => numbers.reduce((a, i) => a + i));
+        let lastSumValue;
+        sum.subscribe((val) => lastSumValue = val);
+        chai_1.expect(lastSumValue).equals(111);
+        numbers.push(1000);
+        chai_1.expect(lastSumValue).equals(1111);
+    });
 });

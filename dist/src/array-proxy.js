@@ -4,6 +4,7 @@ const Mutations = require("./mutations");
 const make_listenable_1 = require("./make-listenable");
 const base_proxy_1 = require("./base-proxy");
 const rxjs_1 = require("rxjs");
+const global_state_1 = require("./global-state");
 /**
  * Proxy handler for Array objects.
  */
@@ -44,6 +45,7 @@ class ArrayProxyHandler extends base_proxy_1.BaseProxyHandler {
             if (value instanceof Function) {
                 value = value.bind(this, this, target);
             }
+            global_state_1.EpoxyGlobalState.registerGetterCall(this.output, property);
             return value;
         }
         // Attempt to convert string representations of indices to numbers in order
@@ -52,6 +54,7 @@ class ArrayProxyHandler extends base_proxy_1.BaseProxyHandler {
             const numericalProperty = Number(property);
             property = isNaN(numericalProperty) ? property : numericalProperty;
         }
+        global_state_1.EpoxyGlobalState.registerGetterCall(this.output, property);
         return super.get(target, property) || target[property];
     }
     set(target, property, value) {
