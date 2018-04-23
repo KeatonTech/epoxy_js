@@ -14,7 +14,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
     ) {
         super(listenFunction);
         Object.keys(initialValues).forEach((key: PropertyKey) => {
-            this.watchSubpropertyChanges(key, initialValues[key]);
+            this.watchSubpropertyChanges(initialValues, key, initialValues[key]);
         });
     }
 
@@ -51,13 +51,16 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         target[property] = newValue as T;
 
         this.removeSubpropertyWatcher(property);
-        this.watchSubpropertyChanges(property, newValue);
+        this.watchSubpropertyChanges(target, property, newValue);
         this.mutations.next(new Mutations.PropertyMutation(property, oldValue, newValue))
         return true;
     }
 
     deleteProperty(target: T, property: PropertyKey) {
         this.removeSubpropertyWatcher(property);
-        return delete target[property];
+        const oldValue = target[property];
+        const deleted = delete target[property];
+        this.mutations.next(new Mutations.PropertyMutation(property, oldValue, undefined));
+        return deleted;
     }
 }

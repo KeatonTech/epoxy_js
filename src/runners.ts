@@ -7,10 +7,10 @@ import { ListenableCollection } from './types';
 
 
 /**
- * Creates an observable that updates whenever the result of the inner computation changes.
- * Note that this only works for functions that rely solely on Epoxy values.
+ * Outputs an observable iff the computeFunction depends on Epoxy values. If the compute
+ * function has no dependencies this function simply returns the output value.
  */
-export function computed<T>(computeFunction: () => T): Observable<T> {
+export function optionallyComputed<T>(computeFunction: () => T): Observable<T> | T {
     let initialResult: T;
     const changeSubject = new Subject<undefined>();
     const listenerMap = new Map<ListenableCollection, Set<PropertyKey>>();
@@ -18,6 +18,10 @@ export function computed<T>(computeFunction: () => T): Observable<T> {
     const initialListenerMap = EpoxyGlobalState.trackGetters(() => {
         initialResult = computeFunction();
     });
+    if (initialListenerMap.size === 0) {
+        return initialResult;
+    }
+
     updateListenerMap(listenerMap, initialListenerMap, changeSubject);
 
     const updateStream = changeSubject.pipe(
@@ -32,6 +36,19 @@ export function computed<T>(computeFunction: () => T): Observable<T> {
     ));
 
     return Observable.concat(Observable.of(initialResult), updateStream);
+}
+
+/**
+ * Creates an observable that updates whenever the result of the inner computation changes.
+ * Note that this only works for functions that rely solely on Epoxy values.
+ */
+export function computed<T>(computeFunction: () => T): Observable<T> {
+    const output = optionallyComputed(computeFunction);
+    if (output instanceof Observable) {
+        return output;
+    } else {
+        return Observable.of(output);
+    }
 }
 
 /**

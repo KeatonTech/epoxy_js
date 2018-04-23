@@ -40,9 +40,13 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
 
     // WATCH SUBPROPERTY CHANGES
 
-    protected watchSubpropertyChanges(key: PropertyKey, value: WatchType) {
+    protected watchSubpropertyChanges(target: T, key: PropertyKey, value: WatchType | Observable<any>) {
         const keySymbol = Symbol();
         this.propertyKeys.set(keySymbol, key);
+
+        if (value instanceof Observable) {
+            return this.watchObservableProperty(target, key, value);
+        }
 
         if (this.propertySubscriptions[key] !== undefined) {
             this.propertySubscriptions[key].unsubscribe();
@@ -167,6 +171,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         } else {
             throw new Error('Could not apply mutation: Unknown or invalid mutation type');
         }
+        this.mutations.next(mutation);
     }
 
 

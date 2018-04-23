@@ -1,10 +1,46 @@
-import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, PropertyMutation, IListenableArray, ValueMutation} from '../epoxy';
+import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, ReadonlyException, PropertyMutation, IListenableArray, ValueMutation} from '../epoxy';
 import { expect } from 'chai';
 import { last } from 'rxjs/operators';
-import { ReadonlyException } from '../src/readonly-proxy';
+import { Subject, BehaviorSubject, Observable } from 'rxjs';
 // import mocha
 
 describe('Array Watcher', () => {
+
+    it('can be initialized with observables', () => {
+        const valueSubject = new BehaviorSubject(1);
+        const listenableArray = makeListenable([valueSubject.asObservable()]);
+        expect(listenableArray).eqls([1]);
+
+
+        let lastMutation: Mutation<string>;
+        listenableArray.listen().subscribe((mutation) => lastMutation = mutation);
+
+        valueSubject.next(2);
+        expect(listenableArray).eqls([2]);
+        expect(lastMutation instanceof PropertyMutation).true;
+        expect((lastMutation as PropertyMutation<number>).key).equals(0);
+        expect((lastMutation as PropertyMutation<number>).oldValue).equals(1);
+        expect((lastMutation as PropertyMutation<number>).newValue).equals(2);
+    });
+
+    it('can be initialized with observables that resolve out of order', () => {
+        const valueSubject1 = new Subject();
+        const valueSubject2 = new BehaviorSubject(2);
+        const listenableArray = makeListenable([
+            valueSubject1.asObservable(),
+            valueSubject2.asObservable()
+        ]);
+        expect(listenableArray[0] instanceof Observable).true;
+        expect(listenableArray[1]).eqls(2);
+
+
+        let lastMutation: Mutation<string>;
+        listenableArray.listen().subscribe((mutation) => lastMutation = mutation);
+
+        valueSubject1.next(1);
+        expect(listenableArray).eqls([1, 2]);
+    });
+
     it('should trigger an ArraySpliceMutation on the push() function', () => {
         let lastMutation: Mutation<string>;
         const listenableArray = makeListenable([]);

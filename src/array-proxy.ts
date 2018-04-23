@@ -13,7 +13,9 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
         private initialValues: WatchType[],
     ) {
        super(listenFunction);
-       initialValues.forEach((value, index) => this.watchSubpropertyChanges(index, value));
+       initialValues.forEach((value, index) => {
+           return this.watchSubpropertyChanges(initialValues as any[], index, value);
+       });
     }
 
     static createProxy<T extends WatchType>(initialValue: T[] = []) {
@@ -33,6 +35,7 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             const spliceArgs = [mutation.key as number, mutation.deleted.length];
             spliceArgs.push.apply(spliceArgs, mutation.inserted);
             target.splice.apply(target, spliceArgs);
+            this.mutations.next(mutation);
         } else {
             super.applyMutation(target, mutation);
         }
@@ -78,7 +81,7 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
         const newValue = this.listenFunction(value as any);
         target[index] = newValue as T;
 
-        this.watchSubpropertyChanges(index, newValue);
+        this.watchSubpropertyChanges(target, index, newValue);
         this.mutations.next(new Mutations.PropertyMutation(index, oldValue, newValue))
         return true;
     }

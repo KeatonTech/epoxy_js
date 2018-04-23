@@ -11,7 +11,6 @@ describe('Function Decorators', () => {
         class TestFuncs {
             @Transaction
             static pushABunchOfStuffToAList(list: Array<number>) {
-                console.log(list);
                 for (let i = 0; i < 100; i++) {
                     list.push(i);
                 }

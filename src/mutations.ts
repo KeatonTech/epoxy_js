@@ -2,6 +2,8 @@ export abstract class Mutation<T> {
     constructor(
         public key: PropertyKey,
     ) {}
+
+    abstract copy(): Mutation<T>;
 }
 
 export class ValueMutation<T> extends Mutation<T> {
@@ -10,6 +12,10 @@ export class ValueMutation<T> extends Mutation<T> {
         public newValue: T,
     ) {
         super(null);
+    }
+
+    copy() {
+        return new ValueMutation(this.oldValue, this.newValue);
     }
 }
 
@@ -21,6 +27,10 @@ export class PropertyMutation<T> extends Mutation<T> {
     ) {
         super(key);
     }
+
+    copy() {
+        return new PropertyMutation(this.key, this.oldValue, this.newValue);
+    }
 }
 
 export class SubpropertyMutation<T> extends Mutation<T> {
@@ -29,6 +39,10 @@ export class SubpropertyMutation<T> extends Mutation<T> {
         public mutation: Mutation<any>,
     ) {
         super(key);
+    }
+
+    copy() {
+        return new SubpropertyMutation(this.key, this.mutation.copy());
     }
 }
 
@@ -39,6 +53,10 @@ export class ArraySpliceMutation<T> extends Mutation<T> {
         public inserted: Array<T>,
     ) {
         super(key);
+    }
+
+    copy() {
+        return new ArraySpliceMutation(this.key as number, this.deleted, this.inserted);
     }
 }
 
