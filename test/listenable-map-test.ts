@@ -1,8 +1,14 @@
-import { listenableMap, makeListenable, Mutation, ArraySpliceMutation, PropertyMutation } from '../epoxy';
+import { listenableMap, makeListenable, Mutation, ArraySpliceMutation, PropertyMutation, ReadonlyException } from '../epoxy';
 import { expect } from 'chai';
 // import mocha
 
 describe('Mapped Listenable Collections', () => {
+    it('returns a readonly collection', () => {
+        const baseArray = makeListenable([1, 2, 3, 4, 5, 6]);
+        const mappedArray = listenableMap(baseArray, (val) => Math.pow(2, val));
+        expect(() => mappedArray.push(4)).throws(ReadonlyException);
+    });
+
     it('maps array values and mutations', () => {
         const baseArray = makeListenable([1, 2, 3, 4, 5, 6]);
         const mappedArray = listenableMap(baseArray, (val) => Math.pow(2, val));

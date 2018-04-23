@@ -12,6 +12,9 @@ class ValueMutation extends Mutation {
         this.oldValue = oldValue;
         this.newValue = newValue;
     }
+    copy() {
+        return new ValueMutation(this.oldValue, this.newValue);
+    }
 }
 exports.ValueMutation = ValueMutation;
 class PropertyMutation extends Mutation {
@@ -20,12 +23,18 @@ class PropertyMutation extends Mutation {
         this.oldValue = oldValue;
         this.newValue = newValue;
     }
+    copy() {
+        return new PropertyMutation(this.key, this.oldValue, this.newValue);
+    }
 }
 exports.PropertyMutation = PropertyMutation;
 class SubpropertyMutation extends Mutation {
     constructor(key, mutation) {
         super(key);
         this.mutation = mutation;
+    }
+    copy() {
+        return new SubpropertyMutation(this.key, this.mutation.copy());
     }
 }
 exports.SubpropertyMutation = SubpropertyMutation;
@@ -34,6 +43,9 @@ class ArraySpliceMutation extends Mutation {
         super(key);
         this.deleted = deleted;
         this.inserted = inserted;
+    }
+    copy() {
+        return new ArraySpliceMutation(this.key, this.deleted, this.inserted);
     }
 }
 exports.ArraySpliceMutation = ArraySpliceMutation;

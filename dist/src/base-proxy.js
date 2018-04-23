@@ -31,9 +31,12 @@ class BaseProxyHandler {
         });
     }
     // WATCH SUBPROPERTY CHANGES
-    watchSubpropertyChanges(key, value) {
+    watchSubpropertyChanges(target, key, value) {
         const keySymbol = Symbol();
         this.propertyKeys.set(keySymbol, key);
+        if (value instanceof rxjs_1.Observable) {
+            return this.watchObservableProperty(target, key, value);
+        }
         if (this.propertySubscriptions[key] !== undefined) {
             this.propertySubscriptions[key].unsubscribe();
             delete this.propertySubscriptions[key];
@@ -136,6 +139,7 @@ class BaseProxyHandler {
         else {
             throw new Error('Could not apply mutation: Unknown or invalid mutation type');
         }
+        this.mutations.next(mutation);
     }
     // PROXY FUNCTIONS
     get(target, property) {

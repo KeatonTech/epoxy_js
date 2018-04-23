@@ -16,7 +16,6 @@ describe('Function Decorators', () => {
         listenable.asObservable().subscribe(() => mutationCount++);
         class TestFuncs {
             static pushABunchOfStuffToAList(list) {
-                console.log(list);
                 for (let i = 0; i < 100; i++) {
                     list.push(i);
                 }

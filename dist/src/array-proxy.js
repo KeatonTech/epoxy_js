@@ -11,7 +11,9 @@ class ArrayProxyHandler extends base_proxy_1.BaseProxyHandler {
     constructor(listenFunction, initialValues) {
         super(listenFunction);
         this.initialValues = initialValues;
-        initialValues.forEach((value, index) => this.watchSubpropertyChanges(index, value));
+        initialValues.forEach((value, index) => {
+            return this.watchSubpropertyChanges(initialValues, index, value);
+        });
     }
     static createProxy(initialValue = []) {
         const watchedInput = initialValue.map(make_listenable_1.makeListenable);
@@ -28,6 +30,7 @@ class ArrayProxyHandler extends base_proxy_1.BaseProxyHandler {
             const spliceArgs = [mutation.key, mutation.deleted.length];
             spliceArgs.push.apply(spliceArgs, mutation.inserted);
             target.splice.apply(target, spliceArgs);
+            this.mutations.next(mutation);
         }
         else {
             super.applyMutation(target, mutation);
@@ -66,7 +69,7 @@ class ArrayProxyHandler extends base_proxy_1.BaseProxyHandler {
         const oldValue = target[index];
         const newValue = this.listenFunction(value);
         target[index] = newValue;
-        this.watchSubpropertyChanges(index, newValue);
+        this.watchSubpropertyChanges(target, index, newValue);
         this.mutations.next(new Mutations.PropertyMutation(index, oldValue, newValue));
         return true;
     }

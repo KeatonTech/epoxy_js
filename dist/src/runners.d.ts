@@ -1,5 +1,10 @@
 import { Observable } from 'rxjs';
 /**
+ * Outputs an observable iff the computeFunction depends on Epoxy values. If the compute
+ * function has no dependencies this function simply returns the output value.
+ */
+export declare function optionallyComputed<T>(computeFunction: () => T): Observable<T> | T;
+/**
  * Creates an observable that updates whenever the result of the inner computation changes.
  * Note that this only works for functions that rely solely on Epoxy values.
  */

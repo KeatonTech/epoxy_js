@@ -12,7 +12,7 @@ class ObjectProxyHandler extends base_proxy_1.BaseProxyHandler {
         super(listenFunction);
         this.initialValues = initialValues;
         Object.keys(initialValues).forEach((key) => {
-            this.watchSubpropertyChanges(key, initialValues[key]);
+            this.watchSubpropertyChanges(initialValues, key, initialValues[key]);
         });
     }
     static createProxy(initialValue = {}) {
@@ -41,13 +41,16 @@ class ObjectProxyHandler extends base_proxy_1.BaseProxyHandler {
         const newValue = this.listenFunction(value);
         target[property] = newValue;
         this.removeSubpropertyWatcher(property);
-        this.watchSubpropertyChanges(property, newValue);
+        this.watchSubpropertyChanges(target, property, newValue);
         this.mutations.next(new Mutations.PropertyMutation(property, oldValue, newValue));
         return true;
     }
     deleteProperty(target, property) {
         this.removeSubpropertyWatcher(property);
-        return delete target[property];
+        const oldValue = target[property];
+        const deleted = delete target[property];
+        this.mutations.next(new Mutations.PropertyMutation(property, oldValue, undefined));
+        return deleted;
     }
 }
 exports.ObjectProxyHandler = ObjectProxyHandler;

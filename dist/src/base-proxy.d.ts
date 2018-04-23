@@ -14,7 +14,7 @@ export declare abstract class BaseProxyHandler<T extends object> implements Prox
     protected mutations: Subject<Mutation<T>>;
     protected propertySubscriptions: TypedObject<Subscription>;
     private propertyKeys;
-    protected watchSubpropertyChanges(key: PropertyKey, value: WatchType): void;
+    protected watchSubpropertyChanges(target: T, key: PropertyKey, value: WatchType | Observable<any>): void;
     protected watchObservableProperty(target: T, key: PropertyKey, value: Observable<any>): void;
     protected removeSubpropertyWatcher(propertyKey: PropertyKey): void;
     protected clearSubpropertyWatchers(): void;

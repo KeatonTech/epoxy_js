@@ -48,7 +48,7 @@ export function listenableMap<T, U>(
         mappedCollection.applyMutation(mappedMutation);
     })
 
-    return mappedCollection;
+    return mappedCollection.asReadonly();
 }
 
 
