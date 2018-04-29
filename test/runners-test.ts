@@ -1,0 +1,87 @@
+import { computed, observe, autorun, makeListenable } from '../epoxy';
+import { expect } from 'chai';
+import { last } from 'rxjs/operators';
+// import mocha
+
+describe('Function runners', () => {
+    it('should re-run the function whenever a dependency value changes', () => {
+        const state = makeListenable({
+            value: 4,
+        });
+
+        let lastStateValue: number;
+        let runCount = 0;
+        autorun(() => {
+            lastStateValue = state.value;
+            runCount++;
+        })
+
+        expect(runCount).eqls(1);
+        expect(lastStateValue).eqls(4);
+
+        state.value = 5;
+        expect(runCount).eqls(2);
+        expect(lastStateValue).eqls(5);
+    });
+
+    it('should observe individual values', () => {
+        const state = makeListenable({
+            value: 4,
+        });
+
+        const stream = observe(() => state.value);
+        
+        let lastValue: number;
+        stream.subscribe((value) => lastValue = value);
+        expect(lastValue).eqls(4);
+
+        state.value = -1;
+        expect(lastValue).eqls(-1);
+    });
+
+    it('should error when no Epoxy values are passed', () => {
+        expect(() => observe(() => 4)).throws();
+    });
+
+    it('should observe individual values', () => {
+        const state = makeListenable({
+            a: 1,
+            b: 2,
+        });
+
+        expect(() => observe(() => state.a + state.b)).throws();
+    });
+
+    it('should compute values derived from multiple epoxy values', () => {
+        const state = makeListenable({
+            a: 1,
+            b: 2,
+        });
+
+        const sum = computed(() => state.a + state.b);
+        let lastSum: number;
+        sum.subscribe((newValue) => lastSum = newValue);
+        expect(lastSum).equals(3);
+        
+        state.a = 2;
+        expect(lastSum).equals(4);
+    });
+
+    it('should compute values derived from an epoxy array', () => {
+        const numbers = makeListenable([1, 2, 3, 4]);
+
+        const sum = computed(() => numbers.reduce((i, a) => i + a));
+        let lastSum: number;
+        sum.subscribe((newValue) => lastSum = newValue);
+        expect(lastSum).equals(10);
+        
+        numbers.push(5);
+        expect(lastSum).equals(15);
+        
+        numbers.splice(0, 1);
+        expect(lastSum).equals(14);
+
+        numbers[0] = 0;
+        expect(lastSum).equals(12);
+    });
+});

@@ -53,7 +53,8 @@ export function listenableMap<T, U>(
 
 
 /**
- * Returns a list of keys in the given data structure.
+ * Returns a version of the input data structure where every value has been passed through the
+ * map function.
  */
 function initialMapping<T, U>(
     collection: ListenableCollection, mapFunction: MapFunction<T, U>): U[] | TypedObject<U> {

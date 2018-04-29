@@ -56,6 +56,10 @@ export interface IListenable<STRUCTURE_TYPE, OBSERVABLES_TYPE, LISTENABLE_TYPE> 
 export interface IGenericListenable extends IListenable<any, any, any> {
 }
 /**
+ * Adds listenable properties to an input type.
+ */
+export declare type IListenableTypeOutput<T extends Object> = T & IGenericListenable;
+/**
  * Extended interface for proxied arrays granting access to the change stream.
  */
 export interface IListenableArray<T> extends Array<T>, IListenable<T[], Array<Observable<T>>, IListenableArray<T>> {

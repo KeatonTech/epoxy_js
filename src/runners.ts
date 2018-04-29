@@ -73,3 +73,47 @@ function updateListenerMap(
         }
     });
 }
+
+/**
+ * Returns an observable that updates whenever an Epoxy value changes.
+ */
+export function observe<T>(pickerFunction: () => T): Observable<T> {
+    let initialResult: T;
+    const changeSubject = new Subject<undefined>();
+
+    const listenerMap = EpoxyGlobalState.trackGetters(() => {
+        initialResult = pickerFunction();
+    });
+    if (listenerMap.size === 0) {
+        throw new Error('Observe function did not include an epoxy value.');
+    }
+    
+    const collection = listenerMap.keys().next().value;
+    const keys = listenerMap.get(collection);
+    if (listenerMap.size > 1 || keys.size > 1) {
+        throw new Error('Observe function included multiple epoxy values.');
+    }
+
+    const key = keys.values().next().value;
+    return Observable.concat(Observable.of(initialResult), collection.observables()[key]);
+}
+
+/**
+ * Re-runs the function whenever any Epoxy value it depends on changes.
+ */
+export function autorun(autorunFunction: () => any) {
+    const changeSubject = new Subject<undefined>();
+    const listenerMap = new Map<ListenableCollection, Set<PropertyKey>>();
+
+    const initialListenerMap = EpoxyGlobalState.trackGetters(() => {
+        autorunFunction();
+    });
+
+    updateListenerMap(listenerMap, initialListenerMap, changeSubject);
+    const updateStream = changeSubject.subscribe(() => {
+            const updatedListenerMap = EpoxyGlobalState.trackGetters(() => {
+                autorunFunction();
+            });
+            updateListenerMap(listenerMap, updatedListenerMap, changeSubject);
+    });
+}

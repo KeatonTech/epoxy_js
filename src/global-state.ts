@@ -46,6 +46,13 @@ export class EpoxyGlobalState {
         return ret;
     }
 
+    public static pauseGetterTrackign(run: () => void) {
+        const originalState = EpoxyGlobalState.trackingGetters;
+        EpoxyGlobalState.trackingGetters = false;
+        run();
+        EpoxyGlobalState.trackingGetters = originalState;
+    }
+
 
     // OPERATION BATCHING
 

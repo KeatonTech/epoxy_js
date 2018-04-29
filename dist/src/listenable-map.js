@@ -38,7 +38,8 @@ function listenableMap(collection, mapFunction) {
 }
 exports.listenableMap = listenableMap;
 /**
- * Returns a list of keys in the given data structure.
+ * Returns a version of the input data structure where every value has been passed through the
+ * map function.
  */
 function initialMapping(collection, mapFunction) {
     if (collection instanceof Array) {

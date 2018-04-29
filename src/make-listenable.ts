@@ -1,5 +1,5 @@
 import { ArrayProxyHandler } from './array-proxy';
-import { IListenableArray, IListenableObject, WatchType, IGenericListenable, TypedObject } from './types';
+import { IListenableArray, IListenableObject, WatchType, IGenericListenable, IListenableTypeOutput, TypedObject, IListenable } from './types';
 import { ObjectProxyHandler } from './object-proxy';
 import { Observable } from 'rxjs';
 
@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
   * Note that if the user passes in a primitive value it will be returned as-is.
   */
  export function makeListenable<T>(input: Array<T>): IListenableArray<T>;
- export function makeListenable<T>(input: TypedObject<T>): IListenableObject<T>;
+ export function makeListenable<T extends {}>(input: T): IListenableTypeOutput<T>;
  export function makeListenable<T>(input: Observable<T>): Observable<T>;
  export function makeListenable<T>(input: T): T;
  export function makeListenable<T extends WatchType>(input: T): WatchType {
