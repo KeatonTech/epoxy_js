@@ -4,9 +4,9 @@ const fs = require('fs');
 const path = require('path');
 
 // List of packages to create to wire up NPM publication.
-const packages = ["operators"];
+const packages = require('./subpackages.js');
 
-packages.forEach((packageName) => {
+packages.list.forEach((packageName) => {
     const packagePath = path.resolve(__dirname, packageName);
     if (!fs.existsSync(packagePath)) {
         fs.mkdirSync(packagePath);
