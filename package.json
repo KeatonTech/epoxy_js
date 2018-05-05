@@ -9,9 +9,11 @@
     "url": "https://github.com/KeatonTech/epoxy_js"
   },
   "scripts": {
-    "build": "tsc",
-    "test": "mocha -r ts-node/register ./test/*.ts",
-    "test_dist": "tsc; mocha ./dist/test/*.js"
+    "build": "rm -r ./dist; tsc",
+    "test": "mocha -r ts-node/register ./test/*.ts ./test/**/*.ts",
+    "test_dist": "npm run-script build; mocha ./dist/test/*.js ./dist/test/**/*.js",
+    "bundle": "node ./bundler.js",
+    "prepack": "npm run-script build; npm run-script bundle"
   },
   "author": "keaton.brandt@gmail.com",
   "license": "MIT",
