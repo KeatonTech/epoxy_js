@@ -33,6 +33,12 @@ class EpoxyGlobalState {
         }
         return ret;
     }
+    static pauseGetterTrackign(run) {
+        const originalState = EpoxyGlobalState.trackingGetters;
+        EpoxyGlobalState.trackingGetters = false;
+        run();
+        EpoxyGlobalState.trackingGetters = originalState;
+    }
     static get isBatching() {
         return this._isBatching;
     }

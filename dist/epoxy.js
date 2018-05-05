@@ -6,8 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./src/mutations"));
 var make_listenable_1 = require("./src/make-listenable");
 exports.makeListenable = make_listenable_1.makeListenable;
-var listenable_map_1 = require("./src/listenable-map");
-exports.listenableMap = listenable_map_1.listenableMap;
 var runners_1 = require("./src/runners");
 exports.autorun = runners_1.autorun;
 exports.computed = runners_1.computed;

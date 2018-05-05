@@ -16,6 +16,7 @@ export declare class EpoxyGlobalState {
     private static consumedGetters;
     static registerGetterCall(collection: ListenableCollection, key: PropertyKey): void;
     static trackGetters(run: () => void): Map<ListenableCollection, Set<PropertyKey>>;
+    static pauseGetterTrackign(run: () => void): void;
     private static changedInBatch;
     private static _isBatching;
     static isBatching: boolean;
