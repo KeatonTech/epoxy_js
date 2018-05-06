@@ -16,7 +16,7 @@ export class ReadonlyProxyHandler<T extends object> implements ProxyHandler<T> {
     };
     
     get(target: T, property: PropertyKey) {
-        if (ReadonlyProxyHandler.GENERIC_DISALLOWED_KEYS[property]) {
+        if (ReadonlyProxyHandler.GENERIC_DISALLOWED_KEYS.hasOwnProperty(property)) {
             throw new ReadonlyException(`Cannot get property ${property} on a readonly object.`);
         }
         return target[property];
@@ -49,7 +49,7 @@ export class ReadonlyArrayProxyHandler<T> extends ReadonlyProxyHandler<T[]> {
     };
     
     get(target: T[], property: PropertyKey) {
-        if (ReadonlyArrayProxyHandler.ARRAY_DISALLOWED_KEYS[property]) {
+        if (ReadonlyArrayProxyHandler.ARRAY_DISALLOWED_KEYS.hasOwnProperty(property)) {
             throw new ReadonlyException(`Cannot get property ${property} on a readonly array.`);
         }
         return super.get(target, property);
