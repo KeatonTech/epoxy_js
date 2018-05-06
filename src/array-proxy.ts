@@ -105,6 +105,25 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             target[target.length - 1] = item;
             proxy.mutations.next(new Mutations.ArraySpliceMutation(target.length - 1, [], [item]));
         },
+
+        pop<T>(proxy: ArrayProxyHandler<T>, target: T[]) {
+            const popped = target[target.length - 1];
+            ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES.splice(
+                proxy,
+                target,
+                target.length - 1,
+                1
+            );
+            return popped;
+        },
+
+        unshift<T>(proxy: ArrayProxyHandler<T>, target: T[], ...insertedItems: Array<T | Observable<T>>) {
+            const popped = target[target.length - 1];
+            const spliceArgs = [proxy, target, 0, 0];
+            Array.prototype.push.apply(spliceArgs, insertedItems);
+            ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES.splice.apply(this, spliceArgs);
+            return target.length;
+        },
         
         splice<T>(
             proxy: ArrayProxyHandler<T>,
@@ -145,6 +164,6 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             }
 
             proxy.mutations.next(new Mutations.ArraySpliceMutation(startIndex, deletedItems, insertedItems));
-        },
+        }
     };
 }

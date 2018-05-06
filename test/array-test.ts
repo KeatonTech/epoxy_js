@@ -236,4 +236,71 @@ describe('Array Watcher', () => {
         numbers.push(1000);
         expect(lastSumValue).equals(1111);
     });
+
+    it('supports the fill() operation', () => {
+        const listenableArray = makeListenable([1, 2, 3, 4, 5]);
+
+        let lastMutation: Mutation<string>;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+
+        listenableArray.fill(0);
+        expect(mutationCount).equals(5);
+        expect(lastMutation).instanceof(PropertyMutation);
+    });
+
+    it('supports the pop() operation', () => {
+        const listenableArray = makeListenable([1, 2, 3, 4, 5]);
+
+        let lastMutation: Mutation<string>;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+
+        expect(listenableArray.pop()).equals(5);
+        expect(mutationCount).equals(1);
+        expect(lastMutation).instanceof(ArraySpliceMutation);
+        expect((lastMutation as ArraySpliceMutation<number>).key).equals(4);
+    });
+
+    it('supports the unshift(item) operation', () => {
+        const listenableArray = makeListenable([1, 2, 3, 4, 5]);
+
+        let lastMutation: Mutation<string>;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+
+        expect(listenableArray.unshift(0)).equals(6);
+        expect(listenableArray).eqls([0, 1, 2, 3, 4, 5]);
+
+        expect(mutationCount).equals(1);
+        expect(lastMutation).instanceof(ArraySpliceMutation);
+        expect((lastMutation as ArraySpliceMutation<number>).key).equals(0);
+    });
+
+    it('supports the unshift(item, item) operation', () => {
+        const listenableArray = makeListenable([1, 2, 3, 4, 5]);
+
+        let lastMutation: Mutation<string>;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+
+        expect(listenableArray.unshift(-1, 0)).equals(7);
+        expect(listenableArray).eqls([-1, 0, 1, 2, 3, 4, 5]);
+
+        expect(mutationCount).equals(1);
+        expect(lastMutation).instanceof(ArraySpliceMutation);
+        expect((lastMutation as ArraySpliceMutation<number>).key).equals(0);
+    });
 });
