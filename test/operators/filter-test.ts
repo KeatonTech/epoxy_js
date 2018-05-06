@@ -1,16 +1,16 @@
-import { makeListenable, Mutation, ArraySpliceMutation, PropertyMutation, ReadonlyException } from '../../epoxy'
+import { makeListenable, Mutation, ArraySpliceMutation, PropertyMutation, ReadonlyException, TypedObject } from '../../epoxy'
 import { filter } from '../../operators';
 import { expect } from 'chai';
 // import mocha
 
 describe('Filtered Listenable Collections', () => {
-    it('returns a readonly collection', () => {
+    it('returns a readonly array', () => {
         const baseArray = makeListenable([1, 2, 3, 4, 5, 6]);
         const filteredArray = filter(baseArray, (val) => val % 2 == 0);
         expect(() => filteredArray.push(4)).throws(ReadonlyException);
     });
 
-    it('returns a filtered collection', () => {
+    it('returns a filtered array', () => {
         const baseArray = makeListenable([1, 2, 3, 4, 5, 6]);
         const filteredArray = filter(baseArray, (val) => val % 2 == 0);
         expect(filteredArray).eqls([2, 4, 6]);
@@ -97,5 +97,84 @@ describe('Filtered Listenable Collections', () => {
         expect(filteredArray).eqls([0, 2, 4, 6]);
         baseArray[2] = 30;
         expect(filteredArray).eqls([0, 2, 30, 4, 6]);
+    });
+
+    it('returns a filtered object', () => {
+        const baseArray = makeListenable({
+            "a": "Some Uppercase",
+            "b": "all-lowercase",
+            "c": "more-lowercase",
+            "d": "A",
+        } as TypedObject<String>);
+        const filteredArray = filter(baseArray, (val) => val.toLowerCase() == val);
+        expect(filteredArray).eqls({
+            "b": "all-lowercase",
+            "c": "more-lowercase",
+        });
+    });
+
+    it('adds rows to a filtered object', () => {
+        const baseArray = makeListenable({
+            "a": "Some Uppercase",
+            "b": "all-lowercase",
+            "c": "more-lowercase",
+            "d": "A",
+        } as TypedObject<String>);
+        const filteredArray = filter(baseArray, (val) => val.toLowerCase() == val);
+
+        baseArray["e"] = "e";
+        expect(filteredArray).eqls({
+            "b": "all-lowercase",
+            "c": "more-lowercase",
+            "e": "e",
+        });
+    });
+
+    it('does not add filtered rows to a filtered object', () => {
+        const baseArray = makeListenable({
+            "a": "Some Uppercase",
+            "b": "all-lowercase",
+            "c": "more-lowercase",
+            "d": "A",
+        } as TypedObject<String>);
+        const filteredArray = filter(baseArray, (val) => val.toLowerCase() == val);
+
+        baseArray["e"] = "E";
+        expect(filteredArray).eqls({
+            "b": "all-lowercase",
+            "c": "more-lowercase",
+        });
+    });
+
+    it('removes rows when they no longer pass the filter', () => {
+        const baseArray = makeListenable({
+            "a": "Some Uppercase",
+            "b": "all-lowercase",
+            "c": "more-lowercase",
+            "d": "A",
+        } as TypedObject<String>);
+        const filteredArray = filter(baseArray, (val) => val.toLowerCase() == val);
+
+        baseArray["c"] = "C";
+        expect(filteredArray).eqls({
+            "b": "all-lowercase",
+        });
+    });
+
+    it('adds rows when they newly pass the filter', () => {
+        const baseArray = makeListenable({
+            "a": "Some Uppercase",
+            "b": "all-lowercase",
+            "c": "more-lowercase",
+            "d": "A",
+        } as TypedObject<String>);
+        const filteredArray = filter(baseArray, (val) => val.toLowerCase() == val);
+
+        baseArray["d"] = "d";
+        expect(filteredArray).eqls({
+            "b": "all-lowercase",
+            "c": "more-lowercase",
+            "d": "d",
+        });
     });
 });
