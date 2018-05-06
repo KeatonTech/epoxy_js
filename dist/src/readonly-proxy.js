@@ -12,7 +12,7 @@ exports.ReadonlyException = ReadonlyException;
  */
 class ReadonlyProxyHandler {
     get(target, property) {
-        if (ReadonlyProxyHandler.GENERIC_DISALLOWED_KEYS[property]) {
+        if (ReadonlyProxyHandler.GENERIC_DISALLOWED_KEYS.hasOwnProperty(property)) {
             throw new ReadonlyException(`Cannot get property ${property} on a readonly object.`);
         }
         return target[property];
@@ -36,7 +36,7 @@ exports.ReadonlyProxyHandler = ReadonlyProxyHandler;
  */
 class ReadonlyArrayProxyHandler extends ReadonlyProxyHandler {
     get(target, property) {
-        if (ReadonlyArrayProxyHandler.ARRAY_DISALLOWED_KEYS[property]) {
+        if (ReadonlyArrayProxyHandler.ARRAY_DISALLOWED_KEYS.hasOwnProperty(property)) {
             throw new ReadonlyException(`Cannot get property ${property} on a readonly array.`);
         }
         return super.get(target, property);

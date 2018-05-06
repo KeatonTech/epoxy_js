@@ -84,3 +84,127 @@ expect(fibonnaci).eql([0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]);
 fibonnaci[1] = 0;
 expect(fibonnaci).eql([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 ```
+
+
+### Functional Operators
+
+Epoxy comes with the `epoxyjs/operators` library which includes collection manipulation functions
+common in functional programming, like map() and filter(). The difference between these and the
+normal Javascript map() and filter() functions is that the output is also a listenable collection,
+so it will change as the original collection changes. This is accomplished iteratively behind the
+scenes -- Epoxy is not just re-running the function every time any change happens, it intelligently
+applies only the necessary changes to the manipulated collection.
+
+
+```javascript
+const things = makeListenable([
+    "EpoxyJS",
+    "Typescript",
+    "Github"
+]);
+
+const awesomeThings = listenableMap(
+    things,
+    (thing) => `${thing} is awesome!`
+);
+
+expect(awesomeThings).equals([
+    "EpoxyJS is awesome!",
+    "Typescript is awesome!",
+    "Github is awesome!"
+]);
+
+things.push("listenableMap");
+expect(awesomeThings).equals([
+    "EpoxyJS is awesome!",
+    "Typescript is awesome!",
+    "Github is awesome!",
+    "listenableMap is awesome!"
+]);
+```
+
+In the case of maps, the mapping function can even rely on other Epoxy values:
+
+```javascript
+const things = makeListenable([
+    "EpoxyJS",
+    "Typescript",
+    "Github"
+]);
+
+const state = makeListenable({
+    adjective: "awesome",
+});
+
+const adjectiveThings = listenableMap(
+    things,
+    (thing) => `${thing} is ${state.adjective}!`
+);
+
+expect(awesomeThings).equals([
+    "EpoxyJS is awesome!",
+    "Typescript is awesome!",
+    "Github is awesome!"
+]);
+
+state.adjective = "cool";
+expect(awesomeThings).equals([
+    "EpoxyJS is cool!",
+    "Typescript is cool!",
+    "Github is cool!"
+]);
+```
+
+The collections created by functional operators act just like normal Epoxy collections, except
+that they do not allow data to be modified. In the previous example, this snippet would result
+in a ReadonlyException:
+
+```javascript
+awesomeThings.push("This makes no sense");
+```
+
+
+### Debugging
+
+It can be difficult to figure out what is happening or why in particularly complicated reactive
+setups. Epoxy provides the following syntax to help track mutations:
+
+```javascript
+const listenableObject = makeListenable({key: "value"});
+listenableObject.debugWithLabel("Listenable Object");
+
+expect(EpoxyGlobalState.DebugData).equals({
+    "Listenable Object": [
+        // Listenable list of mutations that occur on the listenableObject instance.
+    ]
+})
+```
+
+This will allow debugging tools to be built for Epoxy. If an Epoxy app choses to use one global
+state object then this will also enable time-travel debugging, a la Redux.
+
+
+### Optimization
+
+If write a function that changes a single epoxy value more than once, it would be inefficient to
+make Epoxy run all of its change listeners after each modification. To optimize this, Epoxy
+provides a @Transaction decorator that tells it to pause all change notifications until the
+function has finished executing.
+
+```javascript
+const listenable = makeListenable([]);
+let mutationCount = 0;
+listenable.asObservable().subscribe(() => mutationCount++);
+
+class TestFuncs {
+    @Transaction
+    static pushABunchOfStuffToAList(list: Array<number>) {
+        for (let i = 0; i < 100; i++) {
+            list.push(i);
+        }
+    }
+}
+
+TestFuncs.pushABunchOfStuffToAList(listenable);
+expect(mutationCount).equals(1);
+```
