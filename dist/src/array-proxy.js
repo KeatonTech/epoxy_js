@@ -88,6 +88,18 @@ ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES = {
         target[target.length - 1] = item;
         proxy.mutations.next(new Mutations.ArraySpliceMutation(target.length - 1, [], [item]));
     },
+    pop(proxy, target) {
+        const popped = target[target.length - 1];
+        ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES.splice(proxy, target, target.length - 1, 1);
+        return popped;
+    },
+    unshift(proxy, target, ...insertedItems) {
+        const popped = target[target.length - 1];
+        const spliceArgs = [proxy, target, 0, 0];
+        Array.prototype.push.apply(spliceArgs, insertedItems);
+        ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES.splice.apply(this, spliceArgs);
+        return target.length;
+    },
     splice(proxy, target, startIndex, deleteCount, ...insertedItems) {
         const spliceArgs = [startIndex, deleteCount];
         spliceArgs.push.apply(spliceArgs, insertedItems.map((value) => proxy.listenFunction(value)));
@@ -119,6 +131,6 @@ ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES = {
             }
         }
         proxy.mutations.next(new Mutations.ArraySpliceMutation(startIndex, deletedItems, insertedItems));
-    },
+    }
 };
 exports.ArrayProxyHandler = ArrayProxyHandler;

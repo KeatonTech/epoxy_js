@@ -188,4 +188,57 @@ describe('Array Watcher', () => {
         numbers.push(1000);
         chai_1.expect(lastSumValue).equals(1111);
     });
+    it('supports the fill() operation', () => {
+        const listenableArray = epoxy_1.makeListenable([1, 2, 3, 4, 5]);
+        let lastMutation;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+        listenableArray.fill(0);
+        chai_1.expect(mutationCount).equals(5);
+        chai_1.expect(lastMutation).instanceof(epoxy_1.PropertyMutation);
+    });
+    it('supports the pop() operation', () => {
+        const listenableArray = epoxy_1.makeListenable([1, 2, 3, 4, 5]);
+        let lastMutation;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+        chai_1.expect(listenableArray.pop()).equals(5);
+        chai_1.expect(mutationCount).equals(1);
+        chai_1.expect(lastMutation).instanceof(epoxy_1.ArraySpliceMutation);
+        chai_1.expect(lastMutation.key).equals(4);
+    });
+    it('supports the unshift(item) operation', () => {
+        const listenableArray = epoxy_1.makeListenable([1, 2, 3, 4, 5]);
+        let lastMutation;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+        chai_1.expect(listenableArray.unshift(0)).equals(6);
+        chai_1.expect(listenableArray).eqls([0, 1, 2, 3, 4, 5]);
+        chai_1.expect(mutationCount).equals(1);
+        chai_1.expect(lastMutation).instanceof(epoxy_1.ArraySpliceMutation);
+        chai_1.expect(lastMutation.key).equals(0);
+    });
+    it('supports the unshift(item, item) operation', () => {
+        const listenableArray = epoxy_1.makeListenable([1, 2, 3, 4, 5]);
+        let lastMutation;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+        chai_1.expect(listenableArray.unshift(-1, 0)).equals(7);
+        chai_1.expect(listenableArray).eqls([-1, 0, 1, 2, 3, 4, 5]);
+        chai_1.expect(mutationCount).equals(1);
+        chai_1.expect(lastMutation).instanceof(epoxy_1.ArraySpliceMutation);
+        chai_1.expect(lastMutation.key).equals(0);
+    });
 });

@@ -27,7 +27,7 @@ class ObjectProxyHandler extends base_proxy_1.BaseProxyHandler {
         return output;
     }
     copyData(target) {
-        return { ...target };
+        return Object.assign({}, target);
     }
     // PROXY FUNCTIONS
     get(target, property) {
