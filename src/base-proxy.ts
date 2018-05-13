@@ -1,6 +1,6 @@
 import { PropertyMutation, Mutation, SubpropertyMutation, invertMutation, ValueMutation } from './mutations';
 import { WatchType, ListenableCollection, IGenericListenable, TypedObject, IListenableArray } from './types';
-import { Observable, Subject, Subscription } from 'rxjs';
+import { Observable, Subject, Subscription, concat, of } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { EpoxyGlobalState } from './global-state';
 import { computed } from './runners';
@@ -150,8 +150,8 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
             );
         }
 
-        return Observable.concat(
-            Observable.of(initialValue),
+        return concat(
+            of(initialValue),
             streamObservable
         );
     }

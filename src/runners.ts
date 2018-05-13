@@ -1,4 +1,4 @@
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, concat, of } from 'rxjs';
 import { map, filter } from 'rxjs/operators';
 
 import { EpoxyGlobalState } from './global-state';
@@ -35,7 +35,7 @@ export function optionallyComputed<T>(computeFunction: () => T): Observable<T> |
         }
     ));
 
-    return Observable.concat(Observable.of(initialResult), updateStream);
+    return concat(of(initialResult), updateStream);
 }
 
 /**
@@ -47,7 +47,7 @@ export function computed<T>(computeFunction: () => T): Observable<T> {
     if (output instanceof Observable) {
         return output;
     } else {
-        return Observable.of(output);
+        return of(output);
     }
 }
 
@@ -95,7 +95,7 @@ export function observe<T>(pickerFunction: () => T): Observable<T> {
     }
 
     const key = keys.values().next().value;
-    return Observable.concat(Observable.of(initialResult), collection.observables()[key]);
+    return concat(of(initialResult), collection.observables()[key]);
 }
 
 /**

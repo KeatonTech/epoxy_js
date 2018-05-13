@@ -27,7 +27,7 @@ function optionallyComputed(computeFunction) {
         updateListenerMap(listenerMap, updatedListenerMap, changeSubject);
         return result;
     }));
-    return rxjs_1.Observable.concat(rxjs_1.Observable.of(initialResult), updateStream);
+    return rxjs_1.concat(rxjs_1.of(initialResult), updateStream);
 }
 exports.optionallyComputed = optionallyComputed;
 /**
@@ -40,7 +40,7 @@ function computed(computeFunction) {
         return output;
     }
     else {
-        return rxjs_1.Observable.of(output);
+        return rxjs_1.of(output);
     }
 }
 exports.computed = computed;
@@ -81,7 +81,7 @@ function observe(pickerFunction) {
         throw new Error('Observe function included multiple epoxy values.');
     }
     const key = keys.values().next().value;
-    return rxjs_1.Observable.concat(rxjs_1.Observable.of(initialResult), collection.observables()[key]);
+    return rxjs_1.concat(rxjs_1.of(initialResult), collection.observables()[key]);
 }
 exports.observe = observe;
 /**

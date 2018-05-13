@@ -124,7 +124,7 @@ class BaseProxyHandler {
                 mutation instanceof mutations_1.PropertyMutation ||
                 mutation instanceof mutations_1.SubpropertyMutation), operators_1.map((mutation) => target[key]));
         }
-        return rxjs_1.Observable.concat(rxjs_1.Observable.of(initialValue), streamObservable);
+        return rxjs_1.concat(rxjs_1.of(initialValue), streamObservable);
     }
     applyMutation(target, mutation) {
         if (mutation instanceof mutations_1.SubpropertyMutation) {
