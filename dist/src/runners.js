@@ -5,29 +5,40 @@ const operators_1 = require("rxjs/operators");
 const global_state_1 = require("./global-state");
 const mutations_1 = require("./mutations");
 /**
- * Outputs an observable iff the computeFunction depends on Epoxy values. If the compute
- * function has no dependencies this function simply returns the output value.
+ * Internal function that creates and updates a new computed observable.
  */
-function optionallyComputed(computeFunction) {
-    let initialResult;
+function definitelyComputedInternal(computeFunction, subscriptions) {
+    let initialValue;
+    const initialListenerMap = global_state_1.EpoxyGlobalState.trackGetters(() => {
+        initialValue = computeFunction();
+    });
     const changeSubject = new rxjs_1.Subject();
     const listenerMap = new Map();
-    const initialListenerMap = global_state_1.EpoxyGlobalState.trackGetters(() => {
-        initialResult = computeFunction();
-    });
-    if (initialListenerMap.size === 0) {
-        return initialResult;
-    }
-    updateListenerMap(listenerMap, initialListenerMap, changeSubject);
+    updateListenerMap(listenerMap, initialListenerMap, changeSubject, subscriptions);
     const updateStream = changeSubject.pipe(operators_1.map(() => {
         let result;
         const updatedListenerMap = global_state_1.EpoxyGlobalState.trackGetters(() => {
             result = computeFunction();
         });
-        updateListenerMap(listenerMap, updatedListenerMap, changeSubject);
+        updateListenerMap(listenerMap, updatedListenerMap, changeSubject, subscriptions);
         return result;
     }));
-    return rxjs_1.concat(rxjs_1.of(initialResult), updateStream);
+    return rxjs_1.concat(rxjs_1.of(initialValue), updateStream);
+}
+/**
+ * Outputs an observable iff the computeFunction depends on Epoxy values. If the compute
+ * function has no dependencies this function simply returns the output value.
+ */
+function optionallyComputed(computeFunction) {
+    let initialValue;
+    const subscriptions = [];
+    const initialListenerMap = global_state_1.EpoxyGlobalState.trackGetters(() => {
+        initialValue = computeFunction();
+    });
+    if (initialListenerMap.size === 0) {
+        return initialValue;
+    }
+    return computed(computeFunction);
 }
 exports.optionallyComputed = optionallyComputed;
 /**
@@ -35,31 +46,34 @@ exports.optionallyComputed = optionallyComputed;
  * Note that this only works for functions that rely solely on Epoxy values.
  */
 function computed(computeFunction) {
-    const output = optionallyComputed(computeFunction);
-    if (output instanceof rxjs_1.Observable) {
-        return output;
-    }
-    else {
-        return rxjs_1.of(output);
-    }
+    return rxjs_1.Observable.create((subscriber) => {
+        const subscriptions = [];
+        const innerObservable = definitelyComputedInternal(computeFunction, subscriptions);
+        const innerSubscriber = innerObservable.subscribe(subscriber);
+        // Function to be run when the subscription to this observable is lost.
+        return () => {
+            innerSubscriber.unsubscribe();
+            subscriptions.forEach((sub) => sub.unsubscribe());
+        };
+    });
 }
 exports.computed = computed;
 /**
  * Internal function that updates a listener map with new items by registering new listeners.
  */
-function updateListenerMap(currentMap, additionalMap, listener) {
+function updateListenerMap(currentMap, additionalMap, listener, subscriptions) {
     additionalMap.forEach((value, key) => {
         if (currentMap.has(key)) {
             value.forEach((property) => currentMap.get(key).add(property));
         }
         else {
             currentMap.set(key, value);
-            key.listen().subscribe((mutation) => {
+            subscriptions.push(key.listen().subscribe((mutation) => {
                 if (mutation instanceof mutations_1.ArraySpliceMutation ||
                     currentMap.get(key).has(mutation.key)) {
                     listener.next();
                 }
-            });
+            }));
         }
     });
 }
@@ -86,19 +100,26 @@ function observe(pickerFunction) {
 exports.observe = observe;
 /**
  * Re-runs the function whenever any Epoxy value it depends on changes.
+ * Returns a function that, if called, will
  */
 function autorun(autorunFunction) {
     const changeSubject = new rxjs_1.Subject();
     const listenerMap = new Map();
+    const subscriptions = [];
     const initialListenerMap = global_state_1.EpoxyGlobalState.trackGetters(() => {
         autorunFunction();
     });
-    updateListenerMap(listenerMap, initialListenerMap, changeSubject);
-    const updateStream = changeSubject.subscribe(() => {
+    updateListenerMap(listenerMap, initialListenerMap, changeSubject, subscriptions);
+    const changeSubjectSubscription = changeSubject.subscribe(() => {
         const updatedListenerMap = global_state_1.EpoxyGlobalState.trackGetters(() => {
             autorunFunction();
         });
-        updateListenerMap(listenerMap, updatedListenerMap, changeSubject);
+        updateListenerMap(listenerMap, updatedListenerMap, changeSubject, subscriptions);
     });
+    // Return an unsubscribe function
+    return () => {
+        changeSubjectSubscription.unsubscribe();
+        subscriptions.forEach((sub) => sub.unsubscribe());
+    };
 }
 exports.autorun = autorun;

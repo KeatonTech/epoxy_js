@@ -66,4 +66,27 @@ describe('Function runners', () => {
         numbers[0] = 0;
         chai_1.expect(lastSum).equals(12);
     });
+    it('should not compute values from a non-epoxy array', () => {
+        const numbers = [1, 2, 3, 4];
+        const sum = epoxy_1.optionallyComputed(() => numbers.reduce((i, a) => i + a));
+        chai_1.expect(typeof sum === 'number');
+        chai_1.expect(sum).equals(10);
+    });
+    it('should unsubscribe from autorun listeners', () => {
+        const state = epoxy_1.makeListenable({
+            value: 4,
+        });
+        let lastStateValue;
+        let runCount = 0;
+        const unsubscribe = epoxy_1.autorun(() => {
+            lastStateValue = state.value;
+            runCount++;
+        });
+        chai_1.expect(runCount).eqls(1);
+        chai_1.expect(lastStateValue).eqls(4);
+        unsubscribe();
+        state.value = 5;
+        chai_1.expect(runCount).eqls(1);
+        chai_1.expect(lastStateValue).eqls(4);
+    });
 });

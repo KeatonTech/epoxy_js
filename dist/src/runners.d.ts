@@ -15,5 +15,6 @@ export declare function computed<T>(computeFunction: () => T): Observable<T>;
 export declare function observe<T>(pickerFunction: () => T): Observable<T>;
 /**
  * Re-runs the function whenever any Epoxy value it depends on changes.
+ * Returns a function that, if called, will
  */
-export declare function autorun(autorunFunction: () => any): void;
+export declare function autorun(autorunFunction: () => any): () => void;

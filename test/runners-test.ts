@@ -1,4 +1,4 @@
-import { computed, observe, autorun, makeListenable } from '../epoxy';
+import { computed, observe, autorun, makeListenable, optionallyComputed } from '../epoxy';
 import { expect } from 'chai';
 import { last } from 'rxjs/operators';
 // import mocha
@@ -83,5 +83,34 @@ describe('Function runners', () => {
 
         numbers[0] = 0;
         expect(lastSum).equals(12);
+    });
+
+    it('should not compute values from a non-epoxy array', () => {
+        const numbers = [1, 2, 3, 4];
+
+        const sum = optionallyComputed(() => numbers.reduce((i, a) => i + a));
+        expect(typeof sum === 'number');
+        expect(sum).equals(10);
+    });
+
+    it('should unsubscribe from autorun listeners', () => {
+        const state = makeListenable({
+            value: 4,
+        });
+
+        let lastStateValue: number;
+        let runCount = 0;
+        const unsubscribe = autorun(() => {
+            lastStateValue = state.value;
+            runCount++;
+        })
+
+        expect(runCount).eqls(1);
+        expect(lastStateValue).eqls(4);
+        unsubscribe();
+
+        state.value = 5;
+        expect(runCount).eqls(1);
+        expect(lastStateValue).eqls(4);
     });
 });
