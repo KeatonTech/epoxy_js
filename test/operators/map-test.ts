@@ -66,4 +66,61 @@ describe('Mapped Listenable Collections', () => {
         state['base'] = 3;
         expect(mappedArray).eql([3, 9, 27, 81, 243, 729]);
     });
+
+    it('runs the first example from the README', () => {
+        const things = makeListenable([
+            "EpoxyJS",
+            "Typescript",
+            "Github"
+        ]);
+            
+        const awesomeThings = map(
+            things,
+            (thing) => `${thing} is awesome!`
+        );
+            
+        expect(awesomeThings).eqls([
+            "EpoxyJS is awesome!",
+            "Typescript is awesome!",
+            "Github is awesome!"
+        ]);
+            
+        things.push("listenableMap");
+        expect(awesomeThings).eqls([
+            "EpoxyJS is awesome!",
+            "Typescript is awesome!",
+            "Github is awesome!",
+            "listenableMap is awesome!"
+        ]);
+    });
+
+    it('runs the second example from the README', () => {
+        const things = makeListenable([
+            "EpoxyJS",
+            "Typescript",
+            "Github"
+        ]);
+        
+        const state = makeListenable({
+            adjective: "awesome",
+        });
+        
+        const adjectiveThings = map(
+            things,
+            (thing) => `${thing} is ${state.adjective}!`
+        );
+        
+        expect(adjectiveThings).eqls([
+            "EpoxyJS is awesome!",
+            "Typescript is awesome!",
+            "Github is awesome!"
+        ]);
+        
+        state.adjective = "cool";
+        expect(adjectiveThings).eqls([
+            "EpoxyJS is cool!",
+            "Typescript is cool!",
+            "Github is cool!"
+        ]);
+    })
 });

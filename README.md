@@ -108,14 +108,14 @@ const awesomeThings = listenableMap(
     (thing) => `${thing} is awesome!`
 );
 
-expect(awesomeThings).equals([
+expect(awesomeThings).eqls([
     "EpoxyJS is awesome!",
     "Typescript is awesome!",
     "Github is awesome!"
 ]);
 
 things.push("listenableMap");
-expect(awesomeThings).equals([
+expect(awesomeThings).eqls([
     "EpoxyJS is awesome!",
     "Typescript is awesome!",
     "Github is awesome!",
@@ -141,14 +141,14 @@ const adjectiveThings = listenableMap(
     (thing) => `${thing} is ${state.adjective}!`
 );
 
-expect(awesomeThings).equals([
+expect(adjectiveThings).eqls([
     "EpoxyJS is awesome!",
     "Typescript is awesome!",
     "Github is awesome!"
 ]);
 
 state.adjective = "cool";
-expect(awesomeThings).equals([
+expect(adjectiveThings).eqls([
     "EpoxyJS is cool!",
     "Typescript is cool!",
     "Github is cool!"
