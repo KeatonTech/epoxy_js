@@ -10,12 +10,12 @@ import { ListenableCollection } from './types';
  */
 function definitelyComputedInternal<T>(
     computeFunction: () => T,
-    subscriptions: Subscription[],
+    subscriptions: Map<ListenableCollection, Subscription>,
 ): Observable<T> {
     let initialValue: T;
     const initialListenerMap = EpoxyGlobalState.trackGetters(() => {
         initialValue = computeFunction();
-    });
+    }).getters;
 
     const changeSubject = new Subject<undefined>();
     const listenerMap = new Map<ListenableCollection, Set<PropertyKey>>();
@@ -24,10 +24,10 @@ function definitelyComputedInternal<T>(
     const updateStream = changeSubject.pipe(
         map(() => {
             let result: T;
-            const updatedListenerMap = EpoxyGlobalState.trackGetters(() => {
+            const updatedRun = EpoxyGlobalState.trackGetters(() => {
                 result = computeFunction();
             });
-            updateListenerMap(listenerMap, updatedListenerMap, changeSubject, subscriptions);
+            updateListenerMap(listenerMap, updatedRun.getters, changeSubject, subscriptions);
             return result;
         }
     ));
@@ -45,7 +45,7 @@ export function optionallyComputed<T>(computeFunction: () => T): Observable<T> |
 
     const initialListenerMap = EpoxyGlobalState.trackGetters(() => {
         initialValue = computeFunction();
-    });
+    }).getters;
     if (initialListenerMap.size === 0) {
         return initialValue;
     }
@@ -59,7 +59,7 @@ export function optionallyComputed<T>(computeFunction: () => T): Observable<T> |
  */
 export function computed<T>(computeFunction: () => T): Observable<T> {
     return Observable.create((subscriber) => {
-        const subscriptions: Subscription[] = [];
+        const subscriptions: Map<ListenableCollection, Subscription> = new Map();
         const innerObservable = definitelyComputedInternal(computeFunction, subscriptions);
         const innerSubscriber = innerObservable.subscribe(subscriber);
         
@@ -76,21 +76,26 @@ export function computed<T>(computeFunction: () => T): Observable<T> {
  */
 function updateListenerMap(
     currentMap: Map<ListenableCollection, Set<PropertyKey>>,
-    additionalMap: Map<ListenableCollection, Set<PropertyKey>>,
+    newMap: Map<ListenableCollection, Set<PropertyKey>>,
     listener: Subject<undefined>,
-    subscriptions: Array<Subscription>
+    subscriptions: Map<ListenableCollection, Subscription>
 ) {
-    additionalMap.forEach((value, key) => {
-        if (currentMap.has(key)) {
-            value.forEach((property) => currentMap.get(key).add(property));
-        } else {
-            currentMap.set(key, value);
-            subscriptions.push(key.listen().subscribe((mutation) => {
+    // Cancel subscriptions that are no longer necessary.
+    currentMap.forEach((value, key) => {
+        if (!newMap.has(key)) subscriptions.get(key).unsubscribe();
+    });
+
+    // Make new subscriptions.
+    newMap.forEach((value, key) => {
+        const hasExistingKey = currentMap.has(key);
+        currentMap.set(key, value);
+        if (!hasExistingKey) {
+            subscriptions.set(key, (key.listen().subscribe((mutation) => {
                 if (mutation instanceof ArraySpliceMutation ||
                     currentMap.get(key).has(mutation.key)) {
                         listener.next();
                     }
-            }));
+                })));
         }
     });
 }
@@ -104,7 +109,7 @@ export function observe<T>(pickerFunction: () => T): Observable<T> {
 
     const listenerMap = EpoxyGlobalState.trackGetters(() => {
         initialResult = pickerFunction();
-    });
+    }).getters;
     if (listenerMap.size === 0) {
         throw new Error('Observe function did not include an epoxy value.');
     }
@@ -120,29 +125,55 @@ export function observe<T>(pickerFunction: () => T): Observable<T> {
 }
 
 /**
- * Re-runs the function whenever any Epoxy value it depends on changes.
- * Returns a function that, if called, will 
+ * Re-runs the function whenever any Epoxy value it depends on changes. Returns a function that, if
+ * called, will stop the listeners and stop the function from running. An optional trackerFunction
+ * argument allows users to wrap the standard trackGetters function.
  */
-export function autorun(autorunFunction: () => any): ()=>void {
+export function autorun(
+    autorunFunction: () => any,
+    trackerFunction = EpoxyGlobalState.trackGetters
+): ()=>void {
     const changeSubject = new Subject<undefined>();
     const listenerMap = new Map<ListenableCollection, Set<PropertyKey>>();
-    const subscriptions = [];
+    const subscriptions: Map<ListenableCollection, Subscription> = new Map();
 
-    const initialListenerMap = EpoxyGlobalState.trackGetters(() => {
-        autorunFunction();
+    const initialRun = trackerFunction(() => {
+        EpoxyGlobalState.runAsInitialAutorun(() => {
+            autorunFunction();
+        });
     });
+    const initialListenerMap = initialRun.getters;
 
     updateListenerMap(listenerMap, initialListenerMap, changeSubject, subscriptions);
     const changeSubjectSubscription = changeSubject.subscribe(() => {
-            const updatedListenerMap = EpoxyGlobalState.trackGetters(() => {
+            const updatedListenerMap = trackerFunction(() => {
                 autorunFunction();
-            });
+            }).getters;
             updateListenerMap(listenerMap, updatedListenerMap, changeSubject, subscriptions);
     });
 
     // Return an unsubscribe function
+    let cancelled = false;
     return () => {
+        if (cancelled) return;
+        cancelled = true;
         changeSubjectSubscription.unsubscribe();
         subscriptions.forEach((sub) => sub.unsubscribe());
+        initialRun.nestedUnsubscribeFunctions.forEach((fn) => fn());
     };
+}
+
+/**
+ * Similar to autorun() but allows more autorunTree() functions to be used from inside the
+ * autorun function (unlike autorun() which strictly disallows nested autoruns()). The
+ * dependencies of the child autorunTree() calls will not be included in the dependencies of
+ * the parent.
+ */
+export function autorunTree(autorunFunction: () => any): ()=>void {
+    if (!EpoxyGlobalState.isInitialAutorun) {
+        return () => null;
+    }
+    const unsubscribe = autorun(autorunFunction, EpoxyGlobalState.trackGettersNestable);
+    EpoxyGlobalState.registerNestedUnsubscribe(unsubscribe);
+    return unsubscribe;
 }

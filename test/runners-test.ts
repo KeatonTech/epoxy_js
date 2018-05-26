@@ -1,4 +1,4 @@
-import { computed, observe, autorun, makeListenable, optionallyComputed } from '../epoxy';
+import { computed, observe, autorun, autorunTree, makeListenable, optionallyComputed } from '../epoxy';
 import { expect } from 'chai';
 import { last } from 'rxjs/operators';
 // import mocha
@@ -112,5 +112,98 @@ describe('Function runners', () => {
         state.value = 5;
         expect(runCount).eqls(1);
         expect(lastStateValue).eqls(4);
+    });
+
+    it('should nest autorunTree calls', () => {
+        const state = makeListenable({
+            a: 4,
+            b: 5,
+        });
+
+        let outerRunCount = 0;
+        let innerRunCount = 0;
+        autorunTree(() => {
+            state.a;
+            outerRunCount++;
+
+            autorunTree(() => {
+                state.b;
+                innerRunCount++;
+            });
+        });
+
+        state.a++;
+        expect(outerRunCount).eqls(2);
+        expect(innerRunCount).eqls(1);
+
+        state.b++;
+        expect(outerRunCount).eqls(2);
+        expect(innerRunCount).eqls(2);
+    });
+
+    it('should cancel inner autorunTrees when outer ones are cancelled', () => {
+        const state = makeListenable({
+            a: 4,
+            b: 5,
+        });
+
+        let outerRunCount = 0;
+        let innerRunCount = 0;
+        const unsubscribe = autorunTree(() => {
+            state.a;
+            outerRunCount++;
+
+            autorunTree(() => {
+                state.b;
+                innerRunCount++;
+            });
+        });
+
+        state.a++;
+        expect(outerRunCount).eqls(2);
+        expect(innerRunCount).eqls(1);
+        unsubscribe();
+
+        state.b++;
+        expect(outerRunCount).eqls(2);
+        expect(innerRunCount).eqls(1);
+    });
+
+    it('can cancel inner autorunTrees without cancelling outer ones', () => {
+        const state = makeListenable({
+            a: 4,
+            b: 5,
+        });
+
+        let outerRunCount = 0;
+        let innerRunCount = 0;
+        let unsubscribeInner;
+
+        autorunTree(() => {
+            state.a;
+            outerRunCount++;
+
+            const maybeUnsubscribeInner = autorunTree(() => {
+                state.b;
+                innerRunCount++;
+            });
+            if (unsubscribeInner === undefined) {
+                unsubscribeInner = maybeUnsubscribeInner;
+            }
+        });
+
+        state.a++;
+        expect(outerRunCount).eqls(2);
+        console.log(unsubscribeInner.toString());
+        expect(innerRunCount).eqls(1);
+        unsubscribeInner();
+
+        state.b++;
+        expect(outerRunCount).eqls(2);
+        expect(innerRunCount).eqls(1);
+
+        state.a++;
+        expect(outerRunCount).eqls(3);
+        expect(innerRunCount).eqls(1);
     });
 });

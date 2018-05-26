@@ -12,6 +12,14 @@ export class DebugEvent {
 }
 
 /**
+ * Information about a tracked function run
+ */
+export interface TrackedRunData {
+    getters: Map<ListenableCollection, Set<PropertyKey>>;
+    nestedUnsubscribeFunctions: Array<()=>void>;
+}
+
+/**
  * Global state used to track getter calls for computed values.
  */
 export class EpoxyGlobalState {
@@ -22,35 +30,87 @@ export class EpoxyGlobalState {
     private static trackingGetters = false;
     private static consumedGetters: {collection: ListenableCollection, key: PropertyKey}[] = [];
 
+    // Allows cancelling an autorun() to also cancel all of its internal autorunTrees.
+    private static nestedUnsubscribeFunctions: Array<()=>void> = [];
+
+    // True if the run of the current autorun() function is the first run. This is used to make
+    // sure nested autorunTree() functions aren't created more than once.
+    private static initialAutorun = false;
+    public static get isInitialAutorun() {
+        return !EpoxyGlobalState.trackingGetters || EpoxyGlobalState.initialAutorun
+    }
+
     public static registerGetterCall(collection: ListenableCollection, key: PropertyKey) {
         if (!EpoxyGlobalState.trackingGetters) return;
         EpoxyGlobalState.consumedGetters.push({collection, key});
     }
 
-    public static trackGetters(run: () => void): Map<ListenableCollection, Set<PropertyKey>> {
+    public static registerNestedUnsubscribe(fn: () => void) {
+        if (!EpoxyGlobalState.trackingGetters) return;
+        EpoxyGlobalState.nestedUnsubscribeFunctions.push(fn);
+    }
+
+    public static trackGetters(run: () => void): TrackedRunData  {
         if (EpoxyGlobalState.trackingGetters) {
             throw new Error('Cannot create a computed property within another computed property');
         }
         EpoxyGlobalState.consumedGetters = [];
+        EpoxyGlobalState.nestedUnsubscribeFunctions = [];
         EpoxyGlobalState.trackingGetters = true;
         run();
         EpoxyGlobalState.trackingGetters = false;
 
-        const ret = new Map<ListenableCollection, Set<PropertyKey>>();
+        const getters = new Map<ListenableCollection, Set<PropertyKey>>();
         for (const getter of EpoxyGlobalState.consumedGetters) {
-            if (!ret.has(getter.collection)) {
-                ret.set(getter.collection, new Set());
+            if (!getters.has(getter.collection)) {
+                getters.set(getter.collection, new Set());
             }
-            ret.get(getter.collection).add(getter.key);
+            getters.get(getter.collection).add(getter.key);
         }
+        return {
+            getters: getters,
+            nestedUnsubscribeFunctions: EpoxyGlobalState.nestedUnsubscribeFunctions,
+        };
+    }
+
+    /**
+     * Similar to trackGetters, but can be run within an existing trackGetters state. This essentially
+     * pauses the parent tracking, so the parent will not automatically react to changes in any getters
+     * caught in this tracker.
+     */
+    public static trackGettersNestable(run: () => void): TrackedRunData {
+        const currentConsumedGetters = EpoxyGlobalState.consumedGetters;
+        const currentUnsubscribeFunctions = EpoxyGlobalState.nestedUnsubscribeFunctions;
+        const currentTrackingState = EpoxyGlobalState.trackingGetters;
+
+        EpoxyGlobalState.trackingGetters = false;
+        const ret = EpoxyGlobalState.trackGetters(run);
+
+        EpoxyGlobalState.consumedGetters = currentConsumedGetters;
+        EpoxyGlobalState.nestedUnsubscribeFunctions = currentUnsubscribeFunctions;
+        EpoxyGlobalState.trackingGetters = currentTrackingState;
         return ret;
     }
 
-    public static pauseGetterTrackign(run: () => void) {
+    /**
+     * Allows certain operations to be ignored by getter tracking.
+     */
+    public static pauseGetterTracking(run: () => void) {
         const originalState = EpoxyGlobalState.trackingGetters;
         EpoxyGlobalState.trackingGetters = false;
         run();
         EpoxyGlobalState.trackingGetters = originalState;
+    }
+
+    /**
+     * Tracks the fact that a run of an autorun function is its initial run. Subsequent runs won't
+     * re-create autorunTree() functions.
+     */
+    public static runAsInitialAutorun(run: () => void) {
+        const originalState = EpoxyGlobalState.initialAutorun;
+        EpoxyGlobalState.initialAutorun = true;
+        run();
+        EpoxyGlobalState.initialAutorun = originalState;
     }
 
 
