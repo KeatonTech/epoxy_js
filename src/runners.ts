@@ -138,18 +138,19 @@ export function autorun(
     const subscriptions: Map<ListenableCollection, Subscription> = new Map();
 
     const initialRun = trackerFunction(() => {
-        EpoxyGlobalState.runAsInitialAutorun(() => {
-            autorunFunction();
-        });
+        autorunFunction();
     });
     const initialListenerMap = initialRun.getters;
+    let lastRunUnsubscribeFunction = initialRun.nestedUnsubscribeFunctions;
 
     updateListenerMap(listenerMap, initialListenerMap, changeSubject, subscriptions);
     const changeSubjectSubscription = changeSubject.subscribe(() => {
-            const updatedListenerMap = trackerFunction(() => {
-                autorunFunction();
-            }).getters;
-            updateListenerMap(listenerMap, updatedListenerMap, changeSubject, subscriptions);
+        lastRunUnsubscribeFunction.forEach((fn) => fn());
+        const lastRun = trackerFunction(() => {
+            autorunFunction();
+        });
+        lastRunUnsubscribeFunction = lastRun.nestedUnsubscribeFunctions;
+        updateListenerMap(listenerMap, lastRun.getters, changeSubject, subscriptions);
     });
 
     // Return an unsubscribe function
@@ -159,7 +160,7 @@ export function autorun(
         cancelled = true;
         changeSubjectSubscription.unsubscribe();
         subscriptions.forEach((sub) => sub.unsubscribe());
-        initialRun.nestedUnsubscribeFunctions.forEach((fn) => fn());
+        lastRunUnsubscribeFunction.forEach((fn) => fn());
     };
 }
 
@@ -170,9 +171,6 @@ export function autorun(
  * the parent.
  */
 export function autorunTree(autorunFunction: () => any): ()=>void {
-    if (!EpoxyGlobalState.isInitialAutorun) {
-        return () => null;
-    }
     const unsubscribe = autorun(autorunFunction, EpoxyGlobalState.trackGettersNestable);
     EpoxyGlobalState.registerNestedUnsubscribe(unsubscribe);
     return unsubscribe;

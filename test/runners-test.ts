@@ -134,11 +134,11 @@ describe('Function runners', () => {
 
         state.a++;
         expect(outerRunCount).eqls(2);
-        expect(innerRunCount).eqls(1);
+        expect(innerRunCount).eqls(2);
 
         state.b++;
         expect(outerRunCount).eqls(2);
-        expect(innerRunCount).eqls(2);
+        expect(innerRunCount).eqls(3);
     });
 
     it('should cancel inner autorunTrees when outer ones are cancelled', () => {
@@ -161,12 +161,12 @@ describe('Function runners', () => {
 
         state.a++;
         expect(outerRunCount).eqls(2);
-        expect(innerRunCount).eqls(1);
+        expect(innerRunCount).eqls(2);
         unsubscribe();
 
         state.b++;
         expect(outerRunCount).eqls(2);
-        expect(innerRunCount).eqls(1);
+        expect(innerRunCount).eqls(2);
     });
 
     it('can cancel inner autorunTrees without cancelling outer ones', () => {
@@ -183,27 +183,23 @@ describe('Function runners', () => {
             state.a;
             outerRunCount++;
 
-            const maybeUnsubscribeInner = autorunTree(() => {
+            unsubscribeInner = autorunTree(() => {
                 state.b;
                 innerRunCount++;
             });
-            if (unsubscribeInner === undefined) {
-                unsubscribeInner = maybeUnsubscribeInner;
-            }
         });
 
         state.a++;
         expect(outerRunCount).eqls(2);
-        console.log(unsubscribeInner.toString());
-        expect(innerRunCount).eqls(1);
+        expect(innerRunCount).eqls(2);
         unsubscribeInner();
 
         state.b++;
         expect(outerRunCount).eqls(2);
-        expect(innerRunCount).eqls(1);
+        expect(innerRunCount).eqls(2);
 
         state.a++;
         expect(outerRunCount).eqls(3);
-        expect(innerRunCount).eqls(1);
+        expect(innerRunCount).eqls(3);
     });
 });
