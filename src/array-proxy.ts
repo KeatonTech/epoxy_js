@@ -164,6 +164,16 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             }
 
             proxy.mutations.next(new Mutations.ArraySpliceMutation(startIndex, deletedItems, insertedItems));
+        },
+
+        sort<T>(
+            proxy: ArrayProxyHandler<T>,
+            target: T[],
+            sortFunction?: (a: T, b: T) => number,
+        ) {
+            const oldValue = target.slice();
+            target.sort(sortFunction);
+            proxy.applyMutation(target, new Mutations.ValueMutation(oldValue, target));
         }
     };
 }

@@ -303,4 +303,40 @@ describe('Array Watcher', () => {
         expect(lastMutation).instanceof(ArraySpliceMutation);
         expect((lastMutation as ArraySpliceMutation<number>).key).equals(0);
     });
+
+    it('supports the sort() operation with no arguments', () => {
+        const listenableArray = makeListenable([2, 4, 3, 1, 5]);
+
+        let lastMutation: Mutation<string>;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+
+        listenableArray.sort();
+
+        expect(mutationCount).equals(1);
+        expect(lastMutation).instanceof(ValueMutation);
+        expect((lastMutation as ValueMutation<number[]>).oldValue).eqls([2, 4, 3, 1, 5]);
+        expect((lastMutation as ValueMutation<number[]>).newValue).eqls([1, 2, 3, 4, 5]);
+    });
+
+    it('supports the sort() operation with a function argument', () => {
+        const listenableArray = makeListenable([2, 4, 3, 1, 5]);
+
+        let lastMutation: Mutation<string>;
+        let mutationCount = 0;
+        listenableArray.listen().subscribe((mutation) => {
+            mutationCount++;
+            lastMutation = mutation;
+        });
+
+        listenableArray.sort((a, b) => b - a);
+
+        expect(mutationCount).equals(1);
+        expect(lastMutation).instanceof(ValueMutation);
+        expect((lastMutation as ValueMutation<number[]>).oldValue).eqls([2, 4, 3, 1, 5]);
+        expect((lastMutation as ValueMutation<number[]>).newValue).eqls([5, 4, 3, 2, 1]);
+    });
 });
