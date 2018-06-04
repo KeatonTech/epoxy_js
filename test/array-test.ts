@@ -1,10 +1,15 @@
-import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, ReadonlyException, PropertyMutation, IListenableArray, ValueMutation} from '../epoxy';
+import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, ReadonlyException, PropertyMutation, ListenableSignifier, IListenableArray, ValueMutation} from '../epoxy';
 import { expect } from 'chai';
 import { last, reduce } from 'rxjs/operators';
 import { Subject, BehaviorSubject, Observable } from 'rxjs';
 // import mocha
 
 describe('Array Watcher', () => {
+
+    it('signifies as a listenable collection', () => {
+        const listenableArray = makeListenable([]);
+        expect(listenableArray[ListenableSignifier]).equals(true);
+    });
 
     it('can be initialized with observables', () => {
         const valueSubject = new BehaviorSubject(1);

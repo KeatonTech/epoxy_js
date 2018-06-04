@@ -1,10 +1,15 @@
-import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, PropertyMutation, ValueMutation} from '../epoxy';
+import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, computed, PropertyMutation, ValueMutation, ListenableSignifier} from '../epoxy';
 import { expect } from 'chai';
 import { last } from 'rxjs/operators';
 import { ReadonlyException } from '../src/readonly-proxy';
 // import mocha
 
 describe('Object Watcher', () => {
+    it('signifies as a listenable collection', () => {
+        const listenableObject = makeListenable({a: 'a'});
+        expect(listenableObject[ListenableSignifier]).equals(true);
+    });
+
     it('should trigger a PropertyMutation when a value is added', () => {
         let lastMutation: Mutation<string>;
         const listenableObject = makeListenable({a: 'a'});

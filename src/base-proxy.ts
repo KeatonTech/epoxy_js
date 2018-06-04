@@ -1,5 +1,5 @@
 import { PropertyMutation, Mutation, SubpropertyMutation, invertMutation, ValueMutation } from './mutations';
-import { WatchType, ListenableCollection, IGenericListenable, TypedObject, IListenableArray } from './types';
+import { WatchType, ListenableCollection, IGenericListenable, TypedObject, IListenableArray, ListenableSignifier } from './types';
 import { Observable, Subject, Subscription, concat, of } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { EpoxyGlobalState } from './global-state';
@@ -192,6 +192,11 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     // ILISTENABLE FUNCTIONALITY
 
     private static LISTENABLE_FUNCTION_IMPL = {
+        /**
+         * Identifies listenable collections.
+         */
+        [ListenableSignifier]: true,
+
         /**
          * Returns a stream of all mutation events on this Array instance, including changes to any
          * of its subproperties.

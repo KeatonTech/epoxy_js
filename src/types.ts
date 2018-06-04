@@ -6,9 +6,20 @@ type Constructor<T = {}> = new (...args: any[]) => T;
 export type TypedObject<T> = {[key: string] : T, [key: number] : T};
 
 /**
+ * Unique symbol that can be used to identify listenable collections.
+ */
+export const ListenableSignifier = Symbol();
+
+/**
  * Extended interface for proxied arrays granting access to the change stream.
  */
 export interface IListenable<STRUCTURE_TYPE, OBSERVABLES_TYPE, LISTENABLE_TYPE> {
+
+    /**
+     * Provides a way of identifying listenable collections.
+     */
+    [ListenableSignifier]: true,
+
     /**
      * Returns a stream of all mutation events on this Array instance, including changes to any
      * of its subproperties.
