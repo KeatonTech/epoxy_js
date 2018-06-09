@@ -1,6 +1,6 @@
 {
   "name": "epoxyjs",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Proxy-based reactive library for Javascript and Typescript",
   "main": "./dist/epoxy.js",
   "types": "./dist/epoxy.d.ts",
