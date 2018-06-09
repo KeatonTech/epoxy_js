@@ -134,11 +134,15 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     }
 
     getObservable<U>(target: object, key: PropertyKey): Observable<U> {
-        const initialValue = target[key] as U;
+        if (target.constructor.prototype && target.constructor.prototype[key]) {
+            throw new Error('Cannot observe a prototype function like ' + (key as string));
+        }
+
+        const initialValue = this.get(target as T, key);
         const initialCollectionValue = ((initialValue as any) as ListenableCollection);
         
         let streamObservable: Observable<U>;
-        if (initialCollectionValue && initialCollectionValue.asObservable) {
+        if (initialCollectionValue && initialCollectionValue[ListenableSignifier]) {
             streamObservable = (initialCollectionValue.asObservable() as any) as Observable<U>;
             
         } else {

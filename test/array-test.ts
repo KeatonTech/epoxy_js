@@ -132,6 +132,15 @@ describe('Array Watcher', () => {
         expect(values[1]).equals(10);
     });
 
+    it('should not be able to observe built-in functions as observables', () => {
+        const listenableArray = makeListenable([1, 1]);
+        const values = [];
+        listenableArray.observables()[0].subscribe((newVal) => values.push(newVal));
+
+        expect(() => listenableArray.observables().splice(0, 0)).throws(
+            'Cannot observe a prototype function like splice');
+    });
+
     it('should work with computed properties', () => {
         const listenableArray = makeListenable([1, 1]);
         const sum = computed(() => listenableArray[0] + listenableArray[1]);
