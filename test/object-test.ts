@@ -208,4 +208,12 @@ describe('Object Watcher', () => {
             expect(lastMutation.newValue).equals('b');
         }
     });
+
+    it('can create a static copy that does not affect the original object', () => {
+        const object = makeListenable({a: 'a', b: 'b'});
+        const copied = object.staticCopy();
+        copied.a = 'changed'!;
+
+        expect(object.a).eqls('a');
+    });
 });

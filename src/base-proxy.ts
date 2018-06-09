@@ -17,7 +17,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     protected output: ListenableCollection;
     public setOutput(output: ListenableCollection) {
         this.output = output;
-        this.mutations.subscribe((mutation) => {
+        output.listen().subscribe((mutation) => {
             if (EpoxyGlobalState.isBatching) {
                 EpoxyGlobalState.markChangedDuringBatch(this.output);
                 return;
@@ -231,6 +231,13 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
             } else {
                 return new Proxy(handler.output, new ReadonlyProxyHandler());
             }
+        },
+
+        /**
+         * Returns a non-listenable copy of this data structure.
+         */
+        staticCopy<T extends object>(handler: BaseProxyHandler<T>, target: T) {
+            return handler.copyData(target);
         },
 
         /**
