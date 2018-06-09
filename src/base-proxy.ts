@@ -1,7 +1,8 @@
+import { Observable, Subject, Subscription, concat, of, merge } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
+
 import { PropertyMutation, Mutation, SubpropertyMutation, invertMutation, ValueMutation } from './mutations';
 import { WatchType, ListenableCollection, IGenericListenable, TypedObject, IListenableArray, ListenableSignifier } from './types';
-import { Observable, Subject, Subscription, concat, of } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
 import { EpoxyGlobalState } from './global-state';
 import { computed } from './runners';
 import { ReadonlyArrayProxyHandler, ReadonlyProxyHandler } from './readonly-proxy';
@@ -10,6 +11,8 @@ import { ReadonlyArrayProxyHandler, ReadonlyProxyHandler } from './readonly-prox
  * Base class for all data structure proxy handlers.
  */
 export abstract class BaseProxyHandler<T extends object> implements ProxyHandler<T> {
+    public debugLabel: string = '';
+
     constructor(
         protected listenFunction: (input: WatchType) => any,
     ) {}
@@ -17,16 +20,27 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     protected output: ListenableCollection;
     public setOutput(output: ListenableCollection) {
         this.output = output;
-        output.listen().subscribe((mutation) => {
-            if (EpoxyGlobalState.isBatching) {
-                EpoxyGlobalState.markChangedDuringBatch(this.output);
-                return;
-            }
-            this.changeSubject.next(this.copyData(this.output as T));
-        });
     }
 
-    public debugLabel: string = '';
+    private cachedObservable: Observable<T>;
+    private valueSubject: Subject<T> = new Subject();
+    protected get outputAsObservable() {
+        if (!this.cachedObservable) {
+            this.cachedObservable = merge(
+                this.output.listen().pipe(
+                    filter(() => {
+                        if (EpoxyGlobalState.isBatching) {
+                            EpoxyGlobalState.markChangedDuringBatch(this.output);
+                            return false;
+                        }
+                        return true;
+                    }),
+                    map(() => this.copyData(this.output as T))
+                ),
+                this.valueSubject.asObservable());
+        }
+        return this.cachedObservable;
+    }
 
     protected changeSubject: Subject<T> = new Subject();
     protected mutations: Subject<Mutation<T>> = new Subject();
@@ -214,7 +228,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
          * Note that this involves making shallow copies and so should be used sparingly.
          */
         asObservable<T extends object>(handler: BaseProxyHandler<T>, target: T) {
-            return this.changeSubject.asObservable();
+            return this.outputAsObservable;
         },
         
         /**
@@ -293,7 +307,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
          * Tells the listenable to immediately broadcast its current value to the asObservable() stream.
          */
         broadcastCurrentValue<T extends object>(handler: BaseProxyHandler<T>) {
-            handler.changeSubject.next(handler.copyData(handler.output as T));
+            handler.valueSubject.next(handler.copyData(handler.output as T));
         }
     };
 }
