@@ -135,6 +135,20 @@ export class EpoxyGlobalState {
     }
 
 
+    // ACTORS
+
+    private static _currentActor: string | Symbol | null = null;
+    static get currentActor() {
+        return this._currentActor;
+    }
+
+    static runAsActor(actorName: string | Symbol, fn: Function) {
+        EpoxyGlobalState._currentActor = actorName;
+        fn();
+        EpoxyGlobalState._currentActor = null;
+    }
+
+
     // DEBUGGING TOOLS
 
     private static debugDataInternal: IListenableObject<IListenableArray<DebugEvent>>;

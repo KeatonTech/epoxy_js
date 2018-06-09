@@ -1,7 +1,13 @@
+import {EpoxyGlobalState} from './global-state';
+
 export abstract class Mutation<T> {
+    public readonly createdBy: string | Symbol;
+
     constructor(
         public key: PropertyKey,
-    ) {}
+    ) {
+        this.createdBy = EpoxyGlobalState.currentActor;
+    }
 
     abstract copy(): Mutation<T>;
 }
