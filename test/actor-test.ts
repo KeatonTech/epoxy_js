@@ -1,4 +1,4 @@
-import { makeListenable, asActor, Mutation, ArraySpliceMutation } from '../epoxy';
+import { makeListenable, asActor, computed, Mutation, ArraySpliceMutation } from '../epoxy';
 import { expect } from 'chai';
 // import mocha
 
@@ -98,5 +98,27 @@ describe('Actors', () => {
         listenableActor[0].value = 3;
         expect(mutationCount).eqls(2);
         expect(listenableActor).eqls([{value: 3}]);
+    });
+
+    it('computed properties work with actors', () => {
+        const listenable = makeListenable([1, 2]);
+        const listenableActor = asActor('test', listenable);
+        const sum = computed(() => listenableActor[0] + listenableActor[1]);
+
+        let computeCount = 0;
+        let lastSum;
+        sum.subscribe((sum) => {
+            computeCount++;
+            lastSum = sum;
+        });
+        expect(computeCount).eqls(1);
+
+        listenable[0] = 2;
+        expect(computeCount).eqls(2);
+        expect(lastSum).eqls(4);
+
+        listenableActor[1] = 3;
+        expect(computeCount).eqls(3);
+        expect(lastSum).eqls(5);
     });
 });

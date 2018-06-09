@@ -11,6 +11,11 @@ export type TypedObject<T> = {[key: string] : T, [key: number] : T};
 export const ListenableSignifier = Symbol();
 
 /**
+ * Unique symbol that can be used to identify actors wrapping listenable collections.
+ */
+export const ActorSignifier = Symbol();
+
+/**
  * Extended interface for proxied arrays granting access to the change stream.
  */
 export interface IListenable<STRUCTURE_TYPE, OBSERVABLES_TYPE, LISTENABLE_TYPE> {
@@ -45,6 +50,11 @@ export interface IListenable<STRUCTURE_TYPE, OBSERVABLES_TYPE, LISTENABLE_TYPE> 
     asReadonly(): LISTENABLE_TYPE;
 
     /**
+     * Returns a non-listenable copy of this data structure.
+     */
+    staticCopy(): STRUCTURE_TYPE,
+
+    /**
      * Sets a property on this data structure to a computed value or an Observable. This is
      * syntactic sugar that helps with type safety.
      */
@@ -70,6 +80,22 @@ export interface IListenable<STRUCTURE_TYPE, OBSERVABLES_TYPE, LISTENABLE_TYPE> 
      */
     broadcastCurrentValue(): void;
 }
+
+/**
+ * Extended interface for Actors.
+ */
+export interface IActor {
+    /**
+     * Provides a way of identifying actor collections.
+     */
+    [ActorSignifier]: true,
+
+    /**
+     * Provides the base collection that this actor wraps.
+     */
+    getBaseCollection(): ListenableCollection;
+}
+
 
 /**
  * Interface to check if something is listenable.

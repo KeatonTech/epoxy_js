@@ -1,4 +1,4 @@
-import {ListenableCollection, IListenableObject, IListenableArray, IGenericListenable} from './types';
+import {ListenableCollection, IActor, IListenableObject, IListenableArray, IGenericListenable, ActorSignifier} from './types';
 import { Mutation } from './mutations';
 import { makeListenable } from './make-listenable';
 
@@ -62,6 +62,11 @@ export class EpoxyGlobalState {
 
         const getters = new Map<ListenableCollection, Set<PropertyKey>>();
         for (const getter of EpoxyGlobalState.consumedGetters) {
+            let collection = getter.collection;
+            if (collection[ActorSignifier]) {
+                collection = ((collection as any) as IActor).getBaseCollection();
+            }
+
             if (!getters.has(getter.collection)) {
                 getters.set(getter.collection, new Set());
             }

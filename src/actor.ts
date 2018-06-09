@@ -2,7 +2,7 @@ import { Subject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { EpoxyGlobalState } from './global-state';
 import { BaseProxyHandler } from './base-proxy';
-import { ListenableCollection, ListenableSignifier } from './types';
+import { ActorSignifier, IActor, ListenableCollection, ListenableSignifier } from './types';
 import { outputFileSync } from 'fs-extra';
 import { Mutation } from './mutations';
 
@@ -11,7 +11,7 @@ import { Mutation } from './mutations';
  * by the actor do not result in listener functions within the actor running.
  * In other words, it allows a class to ignore its own edits to a model.
  */
-export function asActor<T extends ListenableCollection>(actorName: string | Symbol, collection: T): T {
+export function asActor<T extends ListenableCollection>(actorName: string | Symbol, collection: T) {
     if (!collection[ListenableSignifier]) {
         throw new Error('Collection passed into asActor is not listenable.');
     }
@@ -19,7 +19,7 @@ export function asActor<T extends ListenableCollection>(actorName: string | Symb
     const handler = new ActorProxyHandler(actorName, collection);
     const output = new Proxy(collection, handler);
     handler.setOutput(output);
-    return output as T;
+    return output as T & IActor;
 }
 
 /**
@@ -92,7 +92,22 @@ class ActorProxyHandler extends BaseProxyHandler<ListenableCollection> {
     // LISTENER FUNCTION OVERRIDES
 
     private static LISTENER_FUNCTION_OVERRIDES = {
+        /**
+         * Provides a way of identifying actor collections.
+         */
+        [ActorSignifier]: true,
 
+        /**
+         * Provides the base collection that this actor wraps.
+         */
+        getBaseCollection(handler: ActorProxyHandler) {
+            return handler.collection;
+        },
+
+        /**
+         * Returns a stream of all mutation events on this Array instance, including changes to any
+         * of its subproperties.
+         */
         listen<T extends ListenableCollection>(handler: ActorProxyHandler, target: T) {
             return handler.filteredMutations;
         },
