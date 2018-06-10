@@ -2,11 +2,13 @@ import {EpoxyGlobalState} from './global-state';
 
 export abstract class Mutation<T> {
     public readonly createdBy: string | Symbol;
+    public readonly fromBatch: string | null;
 
     constructor(
         public key: PropertyKey,
     ) {
         this.createdBy = EpoxyGlobalState.currentActor;
+        this.fromBatch = EpoxyGlobalState.batchName;
     }
 
     abstract copy(): Mutation<T>;

@@ -57,8 +57,11 @@ export class EpoxyGlobalState {
         EpoxyGlobalState.consumedGetters = [];
         EpoxyGlobalState.nestedUnsubscribeFunctions = [];
         EpoxyGlobalState.trackingGetters = true;
-        run();
-        EpoxyGlobalState.trackingGetters = false;
+        try {
+            run();
+        } finally {
+            EpoxyGlobalState.trackingGetters = false;
+        }
 
         const getters = new Map<ListenableCollection, Set<PropertyKey>>();
         for (const getter of EpoxyGlobalState.consumedGetters) {
@@ -103,19 +106,11 @@ export class EpoxyGlobalState {
     public static pauseGetterTracking(run: () => void) {
         const originalState = EpoxyGlobalState.trackingGetters;
         EpoxyGlobalState.trackingGetters = false;
-        run();
-        EpoxyGlobalState.trackingGetters = originalState;
-    }
-
-    /**
-     * Tracks the fact that a run of an autorun function is its initial run. Subsequent runs won't
-     * re-create autorunTree() functions.
-     */
-    public static runAsInitialAutorun(run: () => void) {
-        const originalState = EpoxyGlobalState.initialAutorun;
-        EpoxyGlobalState.initialAutorun = true;
-        run();
-        EpoxyGlobalState.initialAutorun = originalState;
+        try {
+            run();
+        } finally {
+            EpoxyGlobalState.trackingGetters = originalState;
+        }
     }
 
 
@@ -123,20 +118,30 @@ export class EpoxyGlobalState {
 
     private static changedInBatch: Set<IGenericListenable> = new Set();
     private static _isBatching: boolean;
-
+    private static _batchName: string;
 
     static get isBatching() {
-        return this._isBatching;
-    }
-    static set isBatching(newIsBatching: boolean) {
-        if (this._isBatching && !newIsBatching) {
-            this.changedInBatch.forEach((collection) => collection.broadcastCurrentValue());
-        }
-        this._isBatching = newIsBatching;
+        return EpoxyGlobalState._isBatching;
     }
 
+    static get batchName() {
+        return EpoxyGlobalState._batchName;
+    }
+ 
     static markChangedDuringBatch(collection: IGenericListenable) {
         this.changedInBatch.add(collection);
+    }
+
+    static runInBatch(batchName: string, run: Function) {
+        this._isBatching = true;
+        this._batchName = batchName;
+        try {
+            run();
+        } finally {
+            this.changedInBatch.forEach((collection) => collection.broadcastCurrentValue());
+            this._isBatching = false;
+            this._batchName = null;
+        }
     }
 
 
@@ -147,10 +152,13 @@ export class EpoxyGlobalState {
         return this._currentActor;
     }
 
-    static runAsActor(actorName: string | Symbol, fn: Function) {
+    static runAsActor(actorName: string | Symbol, run: Function) {
         EpoxyGlobalState._currentActor = actorName;
-        fn();
-        EpoxyGlobalState._currentActor = null;
+        try {
+            run();
+        } finally {
+            EpoxyGlobalState._currentActor = null;
+        }
     }
 
 
