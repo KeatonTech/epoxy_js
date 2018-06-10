@@ -6,6 +6,6 @@ export { asActor } from './src/actor';
 export { autorun, autorunTree, computed, observe, optionallyComputed } from './src/runners';
 export { ReadonlyException } from './src/readonly-proxy';
 
-export { Transaction } from './src/decorators';
+export { Transaction, runTransaction } from './src/decorators';
 
 export { EpoxyGlobalState } from './src/global-state';

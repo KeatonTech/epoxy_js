@@ -49,7 +49,7 @@ describe('Mapped Listenable Collections', () => {
         expect(lastPropMutation.oldValue).equals(undefined);
 
         delete baseObject['b'];
-        expect(mappedObject).eql({'a': 'a', 'b': undefined, 'c': 'c'});
+        expect(mappedObject).eql({'a': 'a', 'c': 'c'});
         expect(lastMutation instanceof PropertyMutation).true;
         lastPropMutation = lastMutation as PropertyMutation<string>;
         expect(lastPropMutation.key).equals('b');

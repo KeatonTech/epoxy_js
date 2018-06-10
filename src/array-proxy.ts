@@ -80,12 +80,11 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
         if (index < 0 || index >= target.length) {
             throw new RangeError(`Index ${index} is out of bounds`);
         }
+
         const oldValue = target[index];
         const newValue = this.listenFunction(value as any);
-        target[index] = newValue as T;
-
+        this.applyMutation(target, new Mutations.PropertyMutation(index, oldValue, newValue));
         this.watchSubpropertyChanges(target, index, newValue);
-        this.mutations.next(new Mutations.PropertyMutation(index, oldValue, newValue))
         return true;
     }
 
@@ -95,7 +94,7 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
     private static ARRAY_FUNCTION_OVERRIDES = {
 
         push<T>(proxy: ArrayProxyHandler<T>, target: T[], item: T | Observable<T>) {
-            target.push.call(target, undefined);
+            proxy.applyMutation(target, new Mutations.ArraySpliceMutation(target.length, [], [item]));
 
             if (item instanceof Observable) {
                 proxy.watchObservableProperty(target, target.length - 1, item);
@@ -103,7 +102,6 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             }
 
             target[target.length - 1] = item;
-            proxy.mutations.next(new Mutations.ArraySpliceMutation(target.length - 1, [], [item]));
         },
 
         pop<T>(proxy: ArrayProxyHandler<T>, target: T[]) {
@@ -132,11 +130,6 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             deleteCount: number,
             ...insertedItems: Array<T | Observable<T>>
         ) {
-            const spliceArgs = [startIndex, deleteCount];
-            spliceArgs.push.apply(
-                spliceArgs,
-                insertedItems.map((value) => proxy.listenFunction(value as WatchType)));
-
             // Some of the subproperty watchers may need to update after a splice because their key
             // (index) will have changed. For example, if there is an IWatchedArray at index 2 and a
             // new item is inserted at index 1, any future mutations to that IWatchedArray should be
@@ -155,15 +148,16 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
                 }
             });
 
-            const deletedItems = target.splice.apply(target, spliceArgs);
+            const deletedItems = target.slice(startIndex, startIndex + deleteCount);
+            proxy.applyMutation(target,
+                new Mutations.ArraySpliceMutation(startIndex, deletedItems, insertedItems));
+
             for (let i = 0; i < insertedItems.length; i++) {
                 if (insertedItems[i] instanceof Observable) {
                     (target[i + startIndex] as any) = undefined;
                     proxy.watchObservableProperty(target, startIndex + i, insertedItems[i] as Observable<T>);
                 }
             }
-
-            proxy.mutations.next(new Mutations.ArraySpliceMutation(startIndex, deletedItems, insertedItems));
         },
 
         sort<T>(

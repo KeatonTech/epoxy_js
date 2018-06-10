@@ -34,6 +34,15 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         return {...target};
     }
 
+    applyMutation(target: T, mutation: Mutations.Mutation<any>) {
+        if (mutation instanceof Mutations.PropertyMutation && mutation.newValue === undefined) {
+            delete target[mutation.key];
+            this.mutations.next(mutation);
+        } else {
+            super.applyMutation(target, mutation);
+        }
+    }
+
 
     // PROXY FUNCTIONS
 
@@ -50,19 +59,17 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
 
         const oldValue = target[property];
         const newValue = this.listenFunction(value as any);
-        target[property] = newValue as T;
 
         this.removeSubpropertyWatcher(property);
+        this.applyMutation(target, new Mutations.PropertyMutation(property, oldValue, newValue))
         this.watchSubpropertyChanges(target, property, newValue);
-        this.mutations.next(new Mutations.PropertyMutation(property, oldValue, newValue))
         return true;
     }
 
     deleteProperty(target: T, property: PropertyKey) {
         this.removeSubpropertyWatcher(property);
         const oldValue = target[property];
-        const deleted = delete target[property];
-        this.mutations.next(new Mutations.PropertyMutation(property, oldValue, undefined));
-        return deleted;
+        this.applyMutation(target, new Mutations.PropertyMutation(property, oldValue, undefined));
+        return true;
     }
 }
