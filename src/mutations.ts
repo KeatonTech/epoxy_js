@@ -1,12 +1,19 @@
 import {EpoxyGlobalState} from './global-state';
 
+/**
+ * Assigns unique mutation indexes using a simple counter.
+ */
+let GlobalMutationIndexer = 0;
+
 export abstract class Mutation<T> {
+    public readonly id: number;
     public readonly createdBy: string | Symbol;
     public readonly fromBatch: string | null;
 
     constructor(
         public key: PropertyKey,
     ) {
+        this.id = GlobalMutationIndexer++;
         this.createdBy = EpoxyGlobalState.currentActor;
         this.fromBatch = EpoxyGlobalState.batchName;
     }

@@ -164,6 +164,21 @@ describe('Array Watcher', () => {
         expect(sumValues[3]).equals(22);
     });
 
+    it('should be able to create a computed map', () => {
+        const listenableArray = makeListenable([1, 1]);
+        const bigger = computed(() => listenableArray.map((val) => val * 10));
+
+        const biggerValues = [];
+        bigger.subscribe((newBigger) => biggerValues.push(newBigger));
+
+        expect(biggerValues.length).eqls(1);
+        expect(biggerValues[0]).eqls([10, 10]);
+
+        listenableArray[0] = 2;
+        expect(biggerValues.length).eqls(2);
+        expect(biggerValues[1]).eqls([20, 10]);
+    });
+
     it('should be able to apply mutations', () => {
         const listenableArray = makeListenable([1, 1]);
         
