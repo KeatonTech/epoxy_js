@@ -19,6 +19,9 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         });
     }
 
+    // Prototype of the input object, used to call through to prototype functions.
+    public inputPrototype: object;
+
     static createProxy<T extends object>(initialValue: TypedObject<T> = {}) {
         const watchedInput = {};
         for (let key in initialValue) {
@@ -27,6 +30,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         const handler = new ObjectProxyHandler(makeListenable, watchedInput);
         const output = new Proxy(watchedInput, handler) as IListenableObject<WatchType>;
         handler.setOutput(output);
+        handler.inputPrototype = initialValue.constructor.prototype;
         return output as IListenableObject<T>;
     }
 
@@ -48,7 +52,9 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
 
     get(target: T, property: PropertyKey) {
         EpoxyGlobalState.registerGetterCall(this.output, property);
-        return super.get(target, property) || target[property];
+        return super.get(target, property) 
+            || (this.inputPrototype && this.inputPrototype[property])
+            || target[property];
     }
 
     set(target: T, property: PropertyKey, value: T | Observable<T>) {

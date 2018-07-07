@@ -1,5 +1,5 @@
 import { ArrayProxyHandler } from './array-proxy';
-import { IListenableArray, IListenableObject, WatchType, IGenericListenable, IListenableTypeOutput, TypedObject, IListenable } from './types';
+import { IListenableArray, IListenableObject, WatchType, IGenericListenable, IListenableTypeOutput, TypedObject, IListenable, ListenableSignifier } from './types';
 import { ObjectProxyHandler } from './object-proxy';
 import { Observable } from 'rxjs';
 
@@ -15,7 +15,7 @@ import { Observable } from 'rxjs';
     if (input instanceof Observable) {
         return input;
     }
-    if ((input as IGenericListenable).listen &&  (input as IGenericListenable).listen instanceof Function) {
+    if (input[ListenableSignifier] === true) {
         return input;
     }
     if (input instanceof Array) {

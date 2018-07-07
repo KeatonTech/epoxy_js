@@ -7,5 +7,6 @@ export { autorun, autorunTree, computed, observe, optionallyComputed } from './s
 export { ReadonlyException } from './src/readonly-proxy';
 
 export { Transaction, runTransaction } from './src/decorators';
+export { MakeListenable, ListenableObject } from './src/object-inheritance';
 
 export { EpoxyGlobalState } from './src/global-state';
