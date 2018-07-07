@@ -3,9 +3,10 @@ import { filter, map } from 'rxjs/operators';
 
 import { PropertyMutation, Mutation, SubpropertyMutation, invertMutation, ValueMutation } from './mutations';
 import { WatchType, ListenableCollection, IGenericListenable, TypedObject, IListenableArray, ListenableSignifier } from './types';
-import { EpoxyGlobalState } from './global-state';
+import { EpoxyGlobalState, BatchingState } from './global-state';
 import { computed } from './runners';
 import { ReadonlyArrayProxyHandler, ReadonlyProxyHandler } from './readonly-proxy';
+import { MutationSequence } from './mutation-sequence';
 
 /**
  * Base class for all data structure proxy handlers.
@@ -29,7 +30,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
             this.cachedObservable = merge(
                 this.output.listen().pipe(
                     filter(() => {
-                        if (EpoxyGlobalState.isBatching) {
+                        if (EpoxyGlobalState.batchingState !== BatchingState.NO_BATCHING) {
                             EpoxyGlobalState.markChangedDuringBatch(this.output);
                             return false;
                         }
@@ -51,7 +52,6 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     // Allows subscription functions to be mapped to their current property key.
     private propertyKeys: Map<Symbol, PropertyKey> = new Map();
 
-
     // WATCH SUBPROPERTY CHANGES
 
     protected watchSubpropertyChanges(target: T, key: PropertyKey, value: WatchType | Observable<any>) {
@@ -72,7 +72,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                 .listen()
                 .subscribe((mutation) => {
                     const currentKey = this.propertyKeys.get(keySymbol);
-                    this.mutations.next(new SubpropertyMutation(currentKey, mutation));
+                    this.broadcastMutation(new SubpropertyMutation(currentKey, mutation));
                 })
         }
     }
@@ -94,7 +94,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                 newValue = this.listenFunction(newValue);
 
                 target[currentKey] = newValue;
-                this.mutations.next(new PropertyMutation(currentKey, oldValue, newValue));
+                this.broadcastMutation(new PropertyMutation(currentKey, oldValue, newValue));
             });
         }
     }
@@ -179,6 +179,9 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
 
     protected abstract copyData(target: T);
 
+    // Mutation Sequence used for optimizing mutations on this
+    private batchingMutations: MutationSequence<T>;
+
     protected applyMutation(target: T, mutation: Mutation<any>) {
         if (mutation instanceof SubpropertyMutation) {
             target[mutation.key].applyMutation(mutation.mutation);
@@ -189,7 +192,27 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         } else {
             throw new Error('Could not apply mutation: Unknown or invalid mutation type');
         }
-        this.mutations.next(mutation);
+        this.broadcastMutation(mutation);
+    }
+
+    protected broadcastMutation(mutation: Mutation<any>) {
+        if (EpoxyGlobalState.batchingState === BatchingState.BATCHING_ACTIVE) {
+            if (this.batchingMutations === undefined) {
+                this.batchingMutations = MutationSequence.create(this.output);
+                EpoxyGlobalState.registerBatchCallback(() => {
+                    try {
+                        this.batchingMutations.getOptimizedSequence().forEach((mutation) => {
+                            this.mutations.next(mutation);
+                        });
+                    } finally {
+                        this.batchingMutations = undefined;
+                    }
+                });
+            }
+            this.batchingMutations.pushMutation(mutation);
+        } else {
+            this.mutations.next(mutation);
+        }
     }
 
 

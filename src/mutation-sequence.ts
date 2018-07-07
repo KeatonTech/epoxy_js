@@ -234,7 +234,7 @@ export class ArrayMutationSequence<T extends object> extends ObjectMutationSeque
      * minimal set of deletion splice mutations.
      */
     private createDeletionMutations() {
-        return this.findMonotonicSequences(Array.from(this.deleted.keys()).sort())
+        return this.findMonotonicSequences(Array.from(this.deleted.keys()).sort((a, b) => a - b))
             .reverse()
             .map((sequence) => new ArraySpliceMutation(
                 sequence[0],
@@ -249,8 +249,9 @@ export class ArrayMutationSequence<T extends object> extends ObjectMutationSeque
      */
     private createInsertionMutations(symbolToIndex: Map<Symbol, number>) {
         return this.findMonotonicSequences(
-                Array.from(this.inserted.keys()).map((symbol) => symbolToIndex.get(symbol)).sort()
-            )
+                Array.from(this.inserted.keys()).map(
+                    (symbol) => symbolToIndex.get(symbol)).sort((a, b) => a - b)
+                )
             .map((sequence) => new ArraySpliceMutation(
                 sequence[0],
                 [],

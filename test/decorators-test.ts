@@ -1,4 +1,4 @@
-import { Mutation, Transaction, makeListenable, runTransaction } from '../epoxy';
+import { Mutation, Transaction, makeListenable, runTransaction, ArraySpliceMutation } from '../epoxy';
 import { expect } from 'chai';
 // import mocha
 
@@ -19,6 +19,26 @@ describe('Function Decorators', () => {
 
         TestFuncs.pushABunchOfStuffToAList(listenable);
         expect(mutationCount).equals(1);
+    });
+
+    it('should optimize mutations', () => {
+        const listenable = makeListenable([]);
+        const mutations = [];
+        listenable.listen().subscribe(mutations.push.bind(mutations));
+
+        class TestFuncs {
+            @Transaction()
+            static pushABunchOfStuffToAList(list: Array<number>) {
+                for (let i = 0; i < 100; i++) {
+                    list.push(i);
+                }
+            }
+        }
+
+        TestFuncs.pushABunchOfStuffToAList(listenable);
+        expect(mutations.length).eqls(1);
+        expect((mutations[0] as ArraySpliceMutation<any>).key).eqls(0);
+        expect((mutations[0] as ArraySpliceMutation<any>).inserted.length).eqls(100);
     });
 
     it('should automatically name the transaction for the function name', () => {

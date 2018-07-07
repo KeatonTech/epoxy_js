@@ -20,6 +20,15 @@ export interface TrackedRunData {
 }
 
 /**
+ * Tracks the state of batching operations.
+ */
+export enum BatchingState {
+    NO_BATCHING,
+    BATCHING_ACTIVE,
+    COLLAPSING_MUTATIONS,
+};
+
+/**
  * Global state used to track getter calls for computed values.
  */
 export class EpoxyGlobalState {
@@ -117,11 +126,12 @@ export class EpoxyGlobalState {
     // OPERATION BATCHING
 
     private static changedInBatch: Set<IGenericListenable> = new Set();
-    private static _isBatching: boolean;
+    private static batchEndCallbacks: Function[] = [];
+    private static _batchingState: BatchingState = BatchingState.NO_BATCHING;
     private static _batchName: string;
 
-    static get isBatching() {
-        return EpoxyGlobalState._isBatching;
+    static get batchingState() {
+        return EpoxyGlobalState._batchingState;
     }
 
     static get batchName() {
@@ -132,14 +142,21 @@ export class EpoxyGlobalState {
         this.changedInBatch.add(collection);
     }
 
+    static registerBatchCallback(cb: () => void) {
+        this.batchEndCallbacks.push(cb);
+    }
+
     static runInBatch(batchName: string, run: Function) {
-        this._isBatching = true;
+        this._batchingState = BatchingState.BATCHING_ACTIVE;
         this._batchName = batchName;
+        this.batchEndCallbacks = [];
         try {
             run();
         } finally {
+            this._batchingState = BatchingState.COLLAPSING_MUTATIONS;
+            this.batchEndCallbacks.forEach((cb) => cb());
             this.changedInBatch.forEach((collection) => collection.broadcastCurrentValue());
-            this._isBatching = false;
+            this._batchingState = BatchingState.NO_BATCHING;
             this._batchName = null;
         }
     }

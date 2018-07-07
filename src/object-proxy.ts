@@ -37,7 +37,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
     applyMutation(target: T, mutation: Mutations.Mutation<any>) {
         if (mutation instanceof Mutations.PropertyMutation && mutation.newValue === undefined) {
             delete target[mutation.key];
-            this.mutations.next(mutation);
+            this.broadcastMutation(mutation);
         } else {
             super.applyMutation(target, mutation);
         }
