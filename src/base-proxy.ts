@@ -29,13 +29,6 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         if (!this.cachedObservable) {
             this.cachedObservable = merge(
                 this.output.listen().pipe(
-                    filter(() => {
-                        if (EpoxyGlobalState.batchingState !== BatchingState.NO_BATCHING) {
-                            EpoxyGlobalState.markChangedDuringBatch(this.output);
-                            return false;
-                        }
-                        return true;
-                    }),
                     map(() => this.copyData(this.output as T))
                 ),
                 this.valueSubject.asObservable());
@@ -72,7 +65,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                 .listen()
                 .subscribe((mutation) => {
                     const currentKey = this.propertyKeys.get(keySymbol);
-                    this.broadcastMutation(new SubpropertyMutation(currentKey, mutation));
+                    this.broadcastMutation(target, new SubpropertyMutation(currentKey, mutation));
                 })
         }
     }
@@ -94,7 +87,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                 newValue = this.listenFunction(newValue);
 
                 target[currentKey] = newValue;
-                this.broadcastMutation(new PropertyMutation(currentKey, oldValue, newValue));
+                this.broadcastMutation(target, new PropertyMutation(currentKey, oldValue, newValue));
             });
         }
     }
@@ -113,7 +106,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
 
     /**
      * In arrays and related data structures the key (index) of a particular property can change over time.
-     * For example, if you have an array of [item1, itemA] and you call array.splice(1, 0, itemAlpha), the
+     * For example, if you have an array of [item1, itemA] and you c all array.splice(1, 0, itemAlpha), the
      * key of itemA will change from 1 to 2. This function allows subproperty watchers to update their keys
      * without needing to resubscribe.
      * @param mapperFunction Returns the new key that an existing one should map to, or null if the specific
@@ -182,7 +175,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     // Mutation Sequence used for optimizing mutations on this
     private batchingMutations: MutationSequence<T>;
 
-    protected applyMutation(target: T, mutation: Mutation<any>) {
+    protected applyMutation(target: T, mutation: Mutation<any>, doNotBroadcast = false) {
         if (mutation instanceof SubpropertyMutation) {
             target[mutation.key].applyMutation(mutation.mutation);
         } else if (mutation instanceof ValueMutation) {
@@ -192,17 +185,21 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         } else {
             throw new Error('Could not apply mutation: Unknown or invalid mutation type');
         }
-        this.broadcastMutation(mutation);
+        if (!doNotBroadcast) this.broadcastMutation(target, mutation);
     }
 
-    protected broadcastMutation(mutation: Mutation<any>) {
+    protected broadcastMutation(target: T, mutation: Mutation<any>) {
         if (EpoxyGlobalState.batchingState === BatchingState.BATCHING_ACTIVE) {
             if (this.batchingMutations === undefined) {
                 this.batchingMutations = MutationSequence.create(this.output);
-                EpoxyGlobalState.registerBatchCallback(() => {
+                EpoxyGlobalState.registerBatchCallback((shouldRollback: boolean) => {
                     try {
                         this.batchingMutations.getOptimizedSequence().forEach((mutation) => {
-                            this.mutations.next(mutation);
+                            if (shouldRollback) {
+                                this.applyMutation(target, invertMutation(mutation), true);
+                            } else {
+                                this.mutations.next(mutation);
+                            }
                         });
                     } finally {
                         this.batchingMutations = undefined;

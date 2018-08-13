@@ -1,4 +1,4 @@
-import { Mutation, Transaction, makeListenable, runTransaction, ArraySpliceMutation } from '../epoxy';
+import { BatchOperation, Mutation, Transaction, makeListenable, runTransaction, ArraySpliceMutation } from '../epoxy';
 import { expect } from 'chai';
 // import mocha
 
@@ -19,6 +19,45 @@ describe('Function Decorators', () => {
 
         TestFuncs.pushABunchOfStuffToAList(listenable);
         expect(mutationCount).equals(1);
+        expect(listenable.length).equals(100);
+    });
+
+    it('should rollback changes when an error occurs when using a Transaction', () => {
+        const listenable = makeListenable([]);
+        let mutationCount = 0;
+        listenable.asObservable().subscribe(() => mutationCount++);
+
+        class TestFuncs {
+            @Transaction()
+            static pushABunchOfStuffToAList(list: Array<number>) {
+                for (let i = 0; i < 100; i++) {
+                    list.push(i);
+                }
+                throw new Error('test error');
+            }
+        }
+
+        expect(() => TestFuncs.pushABunchOfStuffToAList(listenable)).throws();
+        expect(listenable.length).equals(0);
+    });
+
+    it('should not rollback changes when an error occurs when using a BatchOperation', () => {
+        const listenable = makeListenable([]);
+        let mutationCount = 0;
+        listenable.asObservable().subscribe(() => mutationCount++);
+
+        class TestFuncs {
+            @BatchOperation()
+            static pushABunchOfStuffToAList(list: Array<number>) {
+                for (let i = 0; i < 100; i++) {
+                    list.push(i);
+                }
+                throw new Error('test error');
+            }
+        }
+
+        expect(() => TestFuncs.pushABunchOfStuffToAList(listenable)).throws();
+        expect(listenable.length).equals(100);
     });
 
     it('should optimize mutations', () => {

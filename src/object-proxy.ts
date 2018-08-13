@@ -38,12 +38,12 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         return {...target};
     }
 
-    applyMutation(target: T, mutation: Mutations.Mutation<any>) {
+    applyMutation(target: T, mutation: Mutations.Mutation<any>, doNotBroadcast = false) {
         if (mutation instanceof Mutations.PropertyMutation && mutation.newValue === undefined) {
             delete target[mutation.key];
-            this.broadcastMutation(mutation);
+            if (!doNotBroadcast) this.broadcastMutation(target, mutation);
         } else {
-            super.applyMutation(target, mutation);
+            super.applyMutation(target, mutation, doNotBroadcast);
         }
     }
 

@@ -31,14 +31,14 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
         return target.slice();
     }
 
-    applyMutation(target: T[], mutation: Mutations.Mutation<any>) {
+    applyMutation(target: T[], mutation: Mutations.Mutation<any>, doNotBroadcast = false) {
         if (mutation instanceof Mutations.ArraySpliceMutation) {
             const spliceArgs = [mutation.key as number, mutation.deleted.length];
             spliceArgs.push.apply(spliceArgs, mutation.inserted);
             target.splice.apply(target, spliceArgs);
-            this.broadcastMutation(mutation);
+            if (!doNotBroadcast) this.broadcastMutation(target, mutation);
         } else {
-            super.applyMutation(target, mutation);
+            super.applyMutation(target, mutation, doNotBroadcast);
         }
     }
 

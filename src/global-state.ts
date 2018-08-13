@@ -125,8 +125,7 @@ export class EpoxyGlobalState {
 
     // OPERATION BATCHING
 
-    private static changedInBatch: Set<IGenericListenable> = new Set();
-    private static batchEndCallbacks: Function[] = [];
+    private static batchEndCallbacks: Array<(shouldRollback: boolean) => void> = [];
     private static _batchingState: BatchingState = BatchingState.NO_BATCHING;
     private static _batchName: string;
 
@@ -137,25 +136,23 @@ export class EpoxyGlobalState {
     static get batchName() {
         return EpoxyGlobalState._batchName;
     }
- 
-    static markChangedDuringBatch(collection: IGenericListenable) {
-        this.changedInBatch.add(collection);
-    }
 
-    static registerBatchCallback(cb: () => void) {
+    static registerBatchCallback(cb: (shouldRollback: boolean) => void) {
         this.batchEndCallbacks.push(cb);
     }
 
-    static runInBatch(batchName: string, run: Function) {
+    static runInBatch(batchName: string, run: Function, rollbackOnError: boolean = false) {
         this._batchingState = BatchingState.BATCHING_ACTIVE;
         this._batchName = batchName;
         this.batchEndCallbacks = [];
+
+        let hitError = true;
         try {
             run();
+            hitError = false;
         } finally {
             this._batchingState = BatchingState.COLLAPSING_MUTATIONS;
-            this.batchEndCallbacks.forEach((cb) => cb());
-            this.changedInBatch.forEach((collection) => collection.broadcastCurrentValue());
+            this.batchEndCallbacks.forEach((cb) => cb(hitError && rollbackOnError));
             this._batchingState = BatchingState.NO_BATCHING;
             this._batchName = null;
         }
