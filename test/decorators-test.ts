@@ -1,4 +1,4 @@
-import { BatchOperation, Mutation, Transaction, makeListenable, runTransaction, ArraySpliceMutation } from '../epoxy';
+import { BatchOperation, Mutation, Transaction, makeListenable, runTransaction, ArraySpliceMutation, EpoxyGlobalState } from '../epoxy';
 import { expect } from 'chai';
 // import mocha
 
@@ -133,5 +133,45 @@ describe('Function Decorators', () => {
 
         TestFuncs.pushABunchOfStuffToAList(listenable);
         expect(lastMutation.fromBatch).eqls('BulkAdd');
+    });
+
+    it('blocks mutations outside of batches in strict mode', () => {
+        try {
+            const listenableArray = makeListenable([]);
+            EpoxyGlobalState.strictBatchingMode = true;
+            expect(() => listenableArray.push('fail')).throws();
+            expect(() => listenableArray.splice(0, 0, 'alsofail')).throws();
+            expect(() => listenableArray[0] = 'no').throws();
+
+            const listenableObject = makeListenable({});
+            expect(() => listenableObject['a'] = 'a').throws();
+            expect(() => delete listenableObject['a']).throws();
+        } finally {
+            EpoxyGlobalState.strictBatchingMode = false;
+        }
+    });
+
+    it('allows mutations inside batches in strict mode', () => {
+        try {
+            const listenable = makeListenable([]);
+            EpoxyGlobalState.strictBatchingMode = true;
+            let lastMutation: Mutation<any>;
+            listenable.listen().subscribe((mutation) => lastMutation = mutation);
+
+            class TestFuncs {
+                static pushABunchOfStuffToAList(list: Array<number>) {
+                    runTransaction('BulkAdd', () => {
+                        for (let i = 0; i < 100; i++) {
+                            list.push(i);
+                        }
+                    });
+                }
+            }
+
+            TestFuncs.pushABunchOfStuffToAList(listenable);
+            expect(lastMutation.fromBatch).eqls('BulkAdd');
+        } finally {
+            EpoxyGlobalState.strictBatchingMode = false;
+        }
     });
 });

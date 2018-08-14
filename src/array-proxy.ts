@@ -32,6 +32,10 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
     }
 
     applyMutation(target: T[], mutation: Mutations.Mutation<any>, doNotBroadcast = false) {
+        if (EpoxyGlobalState.strictBatchingMode && !EpoxyGlobalState.batchName) {
+            throw new Error('Attempted to modify an object outside of a batch or transaction');
+        }
+
         if (mutation instanceof Mutations.ArraySpliceMutation) {
             const spliceArgs = [mutation.key as number, mutation.deleted.length];
             spliceArgs.push.apply(spliceArgs, mutation.inserted);

@@ -158,6 +158,9 @@ export class EpoxyGlobalState {
         }
     }
 
+    // When true, only allow mutations inside a batch or transaction.
+    public static strictBatchingMode = false;
+
 
     // ACTORS
 

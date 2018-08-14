@@ -39,6 +39,10 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
     }
 
     applyMutation(target: T, mutation: Mutations.Mutation<any>, doNotBroadcast = false) {
+        if (EpoxyGlobalState.strictBatchingMode && !EpoxyGlobalState.batchName) {
+            throw new Error('Attempted to modify an object outside of a batch or transaction');
+        }
+
         if (mutation instanceof Mutations.PropertyMutation && mutation.newValue === undefined) {
             delete target[mutation.key];
             if (!doNotBroadcast) this.broadcastMutation(target, mutation);

@@ -176,6 +176,10 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     private batchingMutations: MutationSequence<T>;
 
     protected applyMutation(target: T, mutation: Mutation<any>, doNotBroadcast = false) {
+        if (EpoxyGlobalState.strictBatchingMode && !EpoxyGlobalState.batchName) {
+            throw new Error('Attempted to modify an object outside of a batch or transaction');
+        }
+        
         if (mutation instanceof SubpropertyMutation) {
             target[mutation.key].applyMutation(mutation.mutation);
         } else if (mutation instanceof ValueMutation) {
