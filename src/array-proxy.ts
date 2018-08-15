@@ -31,18 +31,13 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
         return target.slice();
     }
 
-    applyMutation(target: T[], mutation: Mutations.Mutation<any>, doNotBroadcast = false) {
-        if (EpoxyGlobalState.strictBatchingMode && !EpoxyGlobalState.batchName) {
-            throw new Error('Attempted to modify an object outside of a batch or transaction');
-        }
-
+    applyMutationInternal(target: T[], mutation: Mutations.Mutation<any>) {
         if (mutation instanceof Mutations.ArraySpliceMutation) {
             const spliceArgs = [mutation.key as number, mutation.deleted.length];
             spliceArgs.push.apply(spliceArgs, mutation.inserted);
             target.splice.apply(target, spliceArgs);
-            if (!doNotBroadcast) this.broadcastMutation(target, mutation);
         } else {
-            super.applyMutation(target, mutation, doNotBroadcast);
+            super.applyMutationInternal(target, mutation);
         }
     }
 

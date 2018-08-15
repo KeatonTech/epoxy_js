@@ -38,16 +38,11 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         return {...target};
     }
 
-    applyMutation(target: T, mutation: Mutations.Mutation<any>, doNotBroadcast = false) {
-        if (EpoxyGlobalState.strictBatchingMode && !EpoxyGlobalState.batchName) {
-            throw new Error('Attempted to modify an object outside of a batch or transaction');
-        }
-
+    applyMutationInternal(target: T, mutation: Mutations.Mutation<any>) {
         if (mutation instanceof Mutations.PropertyMutation && mutation.newValue === undefined) {
             delete target[mutation.key];
-            if (!doNotBroadcast) this.broadcastMutation(target, mutation);
         } else {
-            super.applyMutation(target, mutation, doNotBroadcast);
+            super.applyMutationInternal(target, mutation);
         }
     }
 

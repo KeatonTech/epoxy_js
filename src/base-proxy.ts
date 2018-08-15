@@ -179,7 +179,13 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         if (EpoxyGlobalState.strictBatchingMode && !EpoxyGlobalState.batchName) {
             throw new Error('Attempted to modify an object outside of a batch or transaction');
         }
-        
+        this.applyMutationInternal(target, mutation);
+        if (!doNotBroadcast) {
+            this.broadcastMutation(target, mutation);
+        }
+    }
+
+    protected applyMutationInternal(target: T, mutation: Mutation<any>) {
         if (mutation instanceof SubpropertyMutation) {
             target[mutation.key].applyMutation(mutation.mutation);
         } else if (mutation instanceof ValueMutation) {
@@ -189,7 +195,6 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         } else {
             throw new Error('Could not apply mutation: Unknown or invalid mutation type');
         }
-        if (!doNotBroadcast) this.broadcastMutation(target, mutation);
     }
 
     protected broadcastMutation(target: T, mutation: Mutation<any>) {
@@ -202,7 +207,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                             if (shouldRollback) {
                                 this.applyMutation(target, invertMutation(mutation), true);
                             } else {
-                                this.mutations.next(mutation);
+                                this.broadcastMutation(target, mutation);
                             }
                         });
                     } finally {
