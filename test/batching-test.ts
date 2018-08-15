@@ -100,7 +100,7 @@ describe('Batch Operations', () => {
 
         TestFuncs.pushABunchOfStuffToAList(listenable);
         expect(lastMutation.batchStack.length).eqls(1);
-        expect(lastMutation.batchStack[0]).eqls('pushABunchOfStuffToAList');
+        expect(lastMutation.batchStack[0].name).eqls('pushABunchOfStuffToAList');
     });
 
     it('can accept explicit transaction names', () => {
@@ -122,7 +122,7 @@ describe('Batch Operations', () => {
 
         TestFuncs.pushABunchOfStuffToAList(listenable);
         expect(lastMutation.batchStack.length).eqls(1);
-        expect(lastMutation.batchStack[0]).eqls('TestFuncs: Bulk Add');
+        expect(lastMutation.batchStack[0].name).eqls('TestFuncs: Bulk Add');
     });
 
     it('works as a function call, in addition to the decorator', () => {
@@ -145,7 +145,7 @@ describe('Batch Operations', () => {
 
         TestFuncs.pushABunchOfStuffToAList(listenable);
         expect(lastMutation.batchStack.length).eqls(1);
-        expect(lastMutation.batchStack[0]).eqls('BulkAdd');
+        expect(lastMutation.batchStack[0].name).eqls('BulkAdd');
     });
 
     it('blocks mutations outside of batches in strict mode', () => {
@@ -186,7 +186,7 @@ describe('Batch Operations', () => {
 
             TestFuncs.pushABunchOfStuffToAList(listenable);
             expect(lastMutation.batchStack.length).eqls(1);
-            expect(lastMutation.batchStack[0]).eqls('BulkAdd');
+            expect(lastMutation.batchStack[0].name).eqls('BulkAdd');
         } finally {
             EpoxyGlobalState.strictBatchingMode = false;
         }

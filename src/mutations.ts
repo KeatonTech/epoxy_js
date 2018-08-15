@@ -9,6 +9,7 @@ export abstract class Mutation<T> {
     public readonly id: number;
     public readonly createdBy: string | Symbol;
 
+    /** Static wrapper function that is overridden in debug mode. */
     static initialize?: (instance: Mutation<any>) => void;
 
     constructor(

@@ -20,6 +20,18 @@ export enum BatchingState {
 };
 
 /**
+ * Represents a single invocation of a batch operation.
+ */
+export class BatchOperationInvocation {
+    constructor(public name: string) {}
+    
+    /** Static factory that can be overridden in debug mode. */
+    static create(name: string, args: any[]) {
+        return new BatchOperationInvocation(name);
+    }
+}
+
+/**
  * Global state used to track getter calls for computed values.
  */
 export class EpoxyGlobalState {
@@ -117,7 +129,7 @@ export class EpoxyGlobalState {
 
     private static _batchingState: BatchingState = BatchingState.NO_BATCHING;
     private static _batchEndCallbacksStack: Array<Array<(shouldRollback: boolean) => void>> = [];
-    private static _batchNamesStack: string[] = [];
+    private static _batchInvocationsStack: BatchOperationInvocation[] = [];
 
     private static lastBatchIndex = 0;
     private static _batchIndexStack: number[] = [];
@@ -130,13 +142,13 @@ export class EpoxyGlobalState {
         return EpoxyGlobalState._batchIndexStack[EpoxyGlobalState._batchIndexStack.length - 1];
     }
 
-    static get batchStack() {
-        return EpoxyGlobalState._batchNamesStack;
+    static get batchInvocationsStack() {
+        return EpoxyGlobalState._batchInvocationsStack;
     }
 
     static get currentBatchName() {
-        return EpoxyGlobalState._batchNamesStack[
-            EpoxyGlobalState._batchNamesStack.length - 1];
+        return EpoxyGlobalState._batchInvocationsStack[
+            EpoxyGlobalState._batchInvocationsStack.length - 1].name;
     }
 
     static get currentBatchCallbacks() {
@@ -148,9 +160,9 @@ export class EpoxyGlobalState {
         EpoxyGlobalState.currentBatchCallbacks.push(cb);
     }
     
-    static runInBatch(batchName: string, run: Function, rollbackOnError: boolean = false) {
+    static runInBatch(batch: BatchOperationInvocation, run: Function, rollbackOnError: boolean = false) {
         this._batchingState = BatchingState.BATCHING_ACTIVE;
-        this._batchNamesStack.push(batchName);
+        this._batchInvocationsStack.push(batch);
         this._batchEndCallbacksStack.push([]);
         this._batchIndexStack.push(this.lastBatchIndex++);
 
@@ -163,12 +175,12 @@ export class EpoxyGlobalState {
             this._batchIndexStack.pop();
             this._batchEndCallbacksStack.pop();
             
-            if (this._batchNamesStack.length === 1) {
+            if (this._batchInvocationsStack.length === 1) {
                 this._batchingState = BatchingState.COLLAPSING_MUTATIONS;
             }
             currentBatchCallbacks.forEach((cb) => cb(hitError && rollbackOnError));
-            this._batchNamesStack.pop();
-            if (this._batchNamesStack.length === 0) {
+            this._batchInvocationsStack.pop();
+            if (this._batchInvocationsStack.length === 0) {
                 this._batchingState = BatchingState.NO_BATCHING;
             }
         }

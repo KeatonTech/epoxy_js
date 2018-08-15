@@ -1,4 +1,4 @@
-import { EpoxyGlobalState } from "./global-state";
+import { EpoxyGlobalState, BatchOperationInvocation } from "./global-state";
 
 export function Transaction(name?: string) {
     return BatchOperation(name, true);
@@ -16,7 +16,7 @@ export function BatchOperation(name?: string, rollbackOnError = false) {
         if (!originalFunction) return;
         descriptor.value = (...args) => {
             EpoxyGlobalState.runInBatch(
-                name || propertyName,
+                BatchOperationInvocation.create(name || propertyName, args),
                 () => originalFunction.apply(this as any, args),
                 rollbackOnError);
         };
@@ -36,5 +36,8 @@ export function runInBatch(nameOrFn: string | Function, fn?: Function, rollbackO
         name = nameOrFn;
     }
 
-    EpoxyGlobalState.runInBatch(name, fn, rollbackOnError);
+    EpoxyGlobalState.runInBatch(
+        BatchOperationInvocation.create(name, []), 
+        fn,
+        rollbackOnError);
 }
