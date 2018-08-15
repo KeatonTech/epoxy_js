@@ -3,7 +3,6 @@ import { filter } from 'rxjs/operators';
 import { EpoxyGlobalState } from './global-state';
 import { BaseProxyHandler } from './base-proxy';
 import { ActorSignifier, IActor, ListenableCollection, ListenableSignifier } from './types';
-import { outputFileSync } from 'fs-extra';
 import { Mutation } from './mutations';
 
 /**
