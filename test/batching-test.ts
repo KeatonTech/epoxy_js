@@ -1,8 +1,9 @@
 import { BatchOperation, Mutation, Transaction, makeListenable, runTransaction, ArraySpliceMutation, EpoxyGlobalState } from '../epoxy';
+import { installDebugHooks, DebuggableMutation } from '../debugger';
 import { expect } from 'chai';
 // import mocha
 
-describe('Function Decorators', () => {
+describe('Batch Operations', () => {
     it('should only dispatch one change notification after a transaction', () => {
         const listenable = makeListenable([]);
         let mutationCount = 0;
@@ -81,9 +82,12 @@ describe('Function Decorators', () => {
     });
 
     it('should automatically name the transaction for the function name', () => {
+        installDebugHooks();
         const listenable = makeListenable([]);
-        let lastMutation: Mutation<any>;
-        listenable.listen().subscribe((mutation) => lastMutation = mutation);
+        let lastMutation: DebuggableMutation<any>;
+        listenable.listen().subscribe((mutation) => {
+            lastMutation = mutation as DebuggableMutation<any>;
+        });
 
         class TestFuncs {
             @Transaction()
@@ -95,13 +99,17 @@ describe('Function Decorators', () => {
         }
 
         TestFuncs.pushABunchOfStuffToAList(listenable);
-        expect(lastMutation.fromBatch).eqls('pushABunchOfStuffToAList');
+        expect(lastMutation.batchStack.length).eqls(1);
+        expect(lastMutation.batchStack[0]).eqls('pushABunchOfStuffToAList');
     });
 
     it('can accept explicit transaction names', () => {
+        installDebugHooks();
         const listenable = makeListenable([]);
-        let lastMutation: Mutation<any>;
-        listenable.listen().subscribe((mutation) => lastMutation = mutation);
+        let lastMutation: DebuggableMutation<any>;
+        listenable.listen().subscribe((mutation) => {
+            lastMutation = mutation as DebuggableMutation<any>;
+        });
 
         class TestFuncs {
             @Transaction('TestFuncs: Bulk Add')
@@ -113,13 +121,17 @@ describe('Function Decorators', () => {
         }
 
         TestFuncs.pushABunchOfStuffToAList(listenable);
-        expect(lastMutation.fromBatch).eqls('TestFuncs: Bulk Add');
+        expect(lastMutation.batchStack.length).eqls(1);
+        expect(lastMutation.batchStack[0]).eqls('TestFuncs: Bulk Add');
     });
 
     it('works as a function call, in addition to the decorator', () => {
+        installDebugHooks();
         const listenable = makeListenable([]);
-        let lastMutation: Mutation<any>;
-        listenable.listen().subscribe((mutation) => lastMutation = mutation);
+        let lastMutation: DebuggableMutation<any>;
+        listenable.listen().subscribe((mutation) => {
+            lastMutation = mutation as DebuggableMutation<any>;
+        });
 
         class TestFuncs {
             static pushABunchOfStuffToAList(list: Array<number>) {
@@ -132,7 +144,8 @@ describe('Function Decorators', () => {
         }
 
         TestFuncs.pushABunchOfStuffToAList(listenable);
-        expect(lastMutation.fromBatch).eqls('BulkAdd');
+        expect(lastMutation.batchStack.length).eqls(1);
+        expect(lastMutation.batchStack[0]).eqls('BulkAdd');
     });
 
     it('blocks mutations outside of batches in strict mode', () => {
@@ -152,11 +165,14 @@ describe('Function Decorators', () => {
     });
 
     it('allows mutations inside batches in strict mode', () => {
+        installDebugHooks();
         try {
             const listenable = makeListenable([]);
             EpoxyGlobalState.strictBatchingMode = true;
-            let lastMutation: Mutation<any>;
-            listenable.listen().subscribe((mutation) => lastMutation = mutation);
+            let lastMutation: DebuggableMutation<any>;
+            listenable.listen().subscribe((mutation) => {
+                lastMutation = mutation as DebuggableMutation<any>;
+            });
 
             class TestFuncs {
                 static pushABunchOfStuffToAList(list: Array<number>) {
@@ -169,9 +185,66 @@ describe('Function Decorators', () => {
             }
 
             TestFuncs.pushABunchOfStuffToAList(listenable);
-            expect(lastMutation.fromBatch).eqls('BulkAdd');
+            expect(lastMutation.batchStack.length).eqls(1);
+            expect(lastMutation.batchStack[0]).eqls('BulkAdd');
         } finally {
             EpoxyGlobalState.strictBatchingMode = false;
         }
+    });
+
+    it('should handle inner errors in nested transactions', () => {
+        const listenable = makeListenable({});
+        const mutations = [];
+        listenable.listen().subscribe(mutations.push.bind(mutations));
+
+        class TestFuncs {
+            @Transaction()
+            static outerTransaction() {
+                listenable['outerProperty'] = 2;
+                try {
+                    TestFuncs.innerTransaction();
+                } catch (e) {}
+                listenable['outerProperty2'] = 4;
+            }
+
+            @Transaction()
+            static innerTransaction() {
+                listenable['innerProperty'] = 3;
+                throw new Error('test error');
+            }
+        }
+
+        TestFuncs.outerTransaction();
+        expect(listenable['outerProperty']).eqls(2);
+        expect(listenable['outerProperty2']).eqls(4);
+        expect(listenable['innerProperty']).eqls(undefined);
+    });
+
+    it('should handle outer errors in nested transactions', () => {
+        const listenable = makeListenable({});
+        const mutations = [];
+        listenable.listen().subscribe(mutations.push.bind(mutations));
+
+        class TestFuncs {
+            @Transaction()
+            static outerTransaction() {
+                listenable['outerProperty'] = 2;
+                try {
+                    TestFuncs.innerTransaction();
+                } catch (e) {}
+                listenable['outerProperty2'] = 4;
+                throw new Error('test error');
+            }
+
+            @Transaction()
+            static innerTransaction() {
+                listenable['innerProperty'] = 3;
+            }
+        }
+
+        expect(() => TestFuncs.outerTransaction()).throws();
+        expect(listenable['outerProperty']).eqls(undefined);
+        expect(listenable['outerProperty2']).eqls(undefined);
+        expect(listenable['innerProperty']).eqls(undefined);
     });
 });

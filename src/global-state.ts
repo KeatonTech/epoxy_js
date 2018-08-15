@@ -3,15 +3,6 @@ import { Mutation } from './mutations';
 import { makeListenable } from './make-listenable';
 
 /**
- * Interface for debug data.
- */
-export class DebugEvent {
-    mutation: Mutation<any>;
-    stack: string;
-    timestamp: number;
-}
-
-/**
  * Information about a tracked function run
  */
 export interface TrackedRunData {
@@ -32,7 +23,6 @@ export enum BatchingState {
  * Global state used to track getter calls for computed values.
  */
 export class EpoxyGlobalState {
-
 
     // GETTER TRACKING
 
@@ -125,36 +115,62 @@ export class EpoxyGlobalState {
 
     // OPERATION BATCHING
 
-    private static batchEndCallbacks: Array<(shouldRollback: boolean) => void> = [];
     private static _batchingState: BatchingState = BatchingState.NO_BATCHING;
-    private static _batchName: string;
+    private static _batchEndCallbacksStack: Array<Array<(shouldRollback: boolean) => void>> = [];
+    private static _batchNamesStack: string[] = [];
+
+    private static lastBatchIndex = 0;
+    private static _batchIndexStack: number[] = [];
 
     static get batchingState() {
         return EpoxyGlobalState._batchingState;
     }
 
-    static get batchName() {
-        return EpoxyGlobalState._batchName;
+    static get batchIndex() {
+        return EpoxyGlobalState._batchIndexStack[EpoxyGlobalState._batchIndexStack.length - 1];
+    }
+
+    static get batchStack() {
+        return EpoxyGlobalState._batchNamesStack;
+    }
+
+    static get currentBatchName() {
+        return EpoxyGlobalState._batchNamesStack[
+            EpoxyGlobalState._batchNamesStack.length - 1];
+    }
+
+    static get currentBatchCallbacks() {
+        return EpoxyGlobalState._batchEndCallbacksStack[
+            EpoxyGlobalState._batchEndCallbacksStack.length - 1];
     }
 
     static registerBatchCallback(cb: (shouldRollback: boolean) => void) {
-        this.batchEndCallbacks.push(cb);
+        EpoxyGlobalState.currentBatchCallbacks.push(cb);
     }
-
+    
     static runInBatch(batchName: string, run: Function, rollbackOnError: boolean = false) {
         this._batchingState = BatchingState.BATCHING_ACTIVE;
-        this._batchName = batchName;
-        this.batchEndCallbacks = [];
+        this._batchNamesStack.push(batchName);
+        this._batchEndCallbacksStack.push([]);
+        this._batchIndexStack.push(this.lastBatchIndex++);
 
         let hitError = true;
         try {
             run();
             hitError = false;
         } finally {
-            this._batchingState = BatchingState.COLLAPSING_MUTATIONS;
-            this.batchEndCallbacks.forEach((cb) => cb(hitError && rollbackOnError));
-            this._batchingState = BatchingState.NO_BATCHING;
-            this._batchName = null;
+            const currentBatchCallbacks = this.currentBatchCallbacks;
+            this._batchIndexStack.pop();
+            this._batchEndCallbacksStack.pop();
+            
+            if (this._batchNamesStack.length === 1) {
+                this._batchingState = BatchingState.COLLAPSING_MUTATIONS;
+            }
+            currentBatchCallbacks.forEach((cb) => cb(hitError && rollbackOnError));
+            this._batchNamesStack.pop();
+            if (this._batchNamesStack.length === 0) {
+                this._batchingState = BatchingState.NO_BATCHING;
+            }
         }
     }
 
@@ -176,28 +192,5 @@ export class EpoxyGlobalState {
         } finally {
             EpoxyGlobalState._currentActor = null;
         }
-    }
-
-
-    // DEBUGGING TOOLS
-
-    private static debugDataInternal: IListenableObject<IListenableArray<DebugEvent>>;
-
-    static get DebugData(): IListenableObject<IListenableArray<DebugEvent>> {
-        if (!EpoxyGlobalState.debugDataInternal) {
-            EpoxyGlobalState.debugDataInternal = makeListenable({});
-        }
-        return EpoxyGlobalState.debugDataInternal;
-    }
-
-    public static logDebugMutation(label: string, mutation: Mutation<any>) {
-        if (!EpoxyGlobalState.DebugData.hasOwnProperty(label)) {
-            EpoxyGlobalState.DebugData[label] = makeListenable([]);
-        }
-        EpoxyGlobalState.DebugData[label].push({
-            mutation,
-            stack: new Error().stack,
-            timestamp: Date.now(),
-        });
     }
 }

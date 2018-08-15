@@ -1,1 +1,4 @@
-exports.list = ["operators"];
+exports.list = [
+    "debugger",
+    "operators"
+];

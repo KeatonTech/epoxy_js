@@ -12,11 +12,13 @@ import { MutationSequence } from './mutation-sequence';
  * Base class for all data structure proxy handlers.
  */
 export abstract class BaseProxyHandler<T extends object> implements ProxyHandler<T> {
-    public debugLabel: string = '';
 
     constructor(
         protected listenFunction: (input: WatchType) => any,
     ) {}
+
+    // Subclasses: Override this.
+    protected abstract copyData(target: T);
 
     protected output: ListenableCollection;
     public setOutput(output: ListenableCollection) {
@@ -168,21 +170,22 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     }
 
 
-    // OVERRIDABLE DATA FUNCTIONS
+    // MUTATION APPLICATION
 
-    protected abstract copyData(target: T);
-
-    // Mutation Sequence used for optimizing mutations on this
-    private batchingMutations: MutationSequence<T>;
-
-    protected applyMutation(target: T, mutation: Mutation<any>, doNotBroadcast = false) {
-        if (EpoxyGlobalState.strictBatchingMode && !EpoxyGlobalState.batchName) {
+    protected applyMutation(target: T, mutation: Mutation<any>) {
+        if (EpoxyGlobalState.strictBatchingMode && 
+            EpoxyGlobalState.batchingState === BatchingState.NO_BATCHING) {
             throw new Error('Attempted to modify an object outside of a batch or transaction');
         }
-        this.applyMutationInternal(target, mutation);
-        if (!doNotBroadcast) {
-            this.broadcastMutation(target, mutation);
-        }
+        BaseProxyHandler.applyMutationInternalWrapped(this, target, mutation);
+        this.broadcastMutation(target, mutation);
+    }
+    
+    /** Static wrapper function that is overridden in debug mode. */
+    protected static applyMutationInternalWrapped<T extends object>(
+        handler: BaseProxyHandler<T>, target: T, mutation: Mutation<any>
+    ) {
+        handler.applyMutationInternal(target, mutation);
     }
 
     protected applyMutationInternal(target: T, mutation: Mutation<any>) {
@@ -197,28 +200,61 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         }
     }
 
+
+    // MUTATION BATCHING
+
+    private batchedMutationsStack: Array<MutationSequence<T>> = [];
+    private get currentMutationStack() {
+        return this.batchedMutationsStack[this.batchedMutationsStack.length - 1];
+    }
+
+    private batchIndexStack: number[] = [];
+    private get currentBatchIndex() {
+        return this.batchIndexStack[this.batchIndexStack.length - 1];
+    }
+
     protected broadcastMutation(target: T, mutation: Mutation<any>) {
         if (EpoxyGlobalState.batchingState === BatchingState.BATCHING_ACTIVE) {
-            if (this.batchingMutations === undefined) {
-                this.batchingMutations = MutationSequence.create(this.output);
+            if (!this.currentMutationStack ||
+                EpoxyGlobalState.batchIndex !== this.currentBatchIndex
+            ) {
+                this.batchedMutationsStack.push(MutationSequence.create(this.output));
+                this.batchIndexStack.push(EpoxyGlobalState.batchIndex);
+
                 EpoxyGlobalState.registerBatchCallback((shouldRollback: boolean) => {
-                    try {
-                        this.batchingMutations.getOptimizedSequence().forEach((mutation) => {
-                            if (shouldRollback) {
-                                this.applyMutation(target, invertMutation(mutation), true);
-                            } else {
-                                this.broadcastMutation(target, mutation);
-                            }
-                        });
-                    } finally {
-                        this.batchingMutations = undefined;
-                    }
+                    const currentMutationStack = this.currentMutationStack;
+                    this.batchedMutationsStack.pop();
+                    this.batchIndexStack.pop();
+
+                    currentMutationStack.getOptimizedSequence().forEach((mutation) => {
+                        if (shouldRollback) {
+                            // Explicitly avoid using applyMutationInternalWrapped so that these
+                            //  'undo' mutations are not treated as new mutations by the debugger.
+                            // Similarly, this does not use the public applyMutation function
+                            //  because this mutation should not be broadcast.
+                            this.applyMutationInternal(target, invertMutation(mutation));
+                        } else {
+                            // Re-calls the broadcastMutation function instead of directly pushing
+                            //  to the mutations stream to allow for nested batches. In those cases,
+                            //  the simplified mutations from this batch will bubble up to the
+                            //  parent batch so that they can still be rolled back on error.
+                            this.broadcastMutation(target, mutation);
+                        }
+                    });
                 });
             }
-            this.batchingMutations.pushMutation(mutation);
+
+            this.currentMutationStack.pushMutation(mutation);
         } else {
-            this.mutations.next(mutation);
+            BaseProxyHandler.broadcastMutationInternalWrapper(this, mutation);
         }
+    }
+
+    /** Static wrapper function that is overridden in debug mode. */
+    protected static broadcastMutationInternalWrapper<T extends object>(
+        instance: BaseProxyHandler<T>, mutation: Mutation<any>
+    ) {
+        instance.mutations.next(mutation);
     }
 
 
@@ -235,6 +271,12 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         }
     }
 
+
+    // DEBUG OVERRIDES
+
+    public debugLabel?: string;
+    static debugWithLabel?: (instance: BaseProxyHandler<any>, label: string) => void;
+    
 
     // ILISTENABLE FUNCTIONALITY
 
@@ -322,13 +364,8 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
          * Gives this listenable a unique value that can be displayed in debug tools.
          */
         debugWithLabel<T extends object>(handler: BaseProxyHandler<T>, target: T, label: string) {
-            const hadPreviousLabel = !!handler.debugLabel;
-            handler.debugLabel = label;
-            EpoxyGlobalState.logDebugMutation(handler.debugLabel, new ValueMutation(null, target));
-            if (!hadPreviousLabel) {
-                handler.mutations.subscribe((mutation) => {
-                    EpoxyGlobalState.logDebugMutation(handler.debugLabel, mutation);
-                });
+            if (BaseProxyHandler.debugWithLabel) {
+                BaseProxyHandler.debugWithLabel(handler, label);
             }
         },
 

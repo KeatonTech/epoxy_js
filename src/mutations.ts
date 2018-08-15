@@ -8,14 +8,15 @@ let GlobalMutationIndexer = 0;
 export abstract class Mutation<T> {
     public readonly id: number;
     public readonly createdBy: string | Symbol;
-    public readonly fromBatch: string | null;
+
+    static initialize?: (instance: Mutation<any>) => void;
 
     constructor(
         public key: PropertyKey,
     ) {
         this.id = GlobalMutationIndexer++;
         this.createdBy = EpoxyGlobalState.currentActor;
-        this.fromBatch = EpoxyGlobalState.batchName;
+        if (Mutation.initialize) Mutation.initialize(this);
     }
 
     abstract copy(): Mutation<T>;
