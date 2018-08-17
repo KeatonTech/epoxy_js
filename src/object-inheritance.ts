@@ -9,7 +9,7 @@ export function MakeListenable<T extends Constructable>(Base: T) {
     return class extends Base implements IListenableObject<any> {
         constructor(...args) {
             super(...args);
-            return makeListenable(this);
+            return makeListenable(this, true);
         }
 
         listen(): Observable<Mutation<any>> {
@@ -45,6 +45,10 @@ export function MakeListenable<T extends Constructable>(Base: T) {
         }
 
         debugWithLabel() {
+            throw new Error();
+        }
+
+        hideFromDebugger() {
             throw new Error();
         }
 

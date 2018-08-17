@@ -22,6 +22,9 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
     // Prototype of the input object, used to call through to prototype functions.
     public inputPrototype: object;
 
+    // Constructor function used to create the original object.
+    private originalConstructor: Function;
+
     static createProxy<T extends object>(initialValue: TypedObject<T> = {}) {
         const watchedInput = {};
         for (let key in initialValue) {
@@ -30,6 +33,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         const handler = new ObjectProxyHandler(makeListenable, watchedInput);
         const output = new Proxy(watchedInput, handler) as IListenableObject<WatchType>;
         handler.setOutput(output);
+        handler.originalConstructor = initialValue.constructor;
         handler.inputPrototype = initialValue.constructor.prototype;
         return output as IListenableObject<T>;
     }
@@ -51,6 +55,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
 
     get(target: T, property: PropertyKey) {
         EpoxyGlobalState.registerGetterCall(this.output, property);
+        if (property === 'constructor') return this.originalConstructor;
         return super.get(target, property) 
             || (this.inputPrototype && this.inputPrototype[property])
             || target[property];
@@ -76,5 +81,9 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         const oldValue = target[property];
         this.applyMutation(target, new Mutations.PropertyMutation(property, oldValue, undefined));
         return true;
+    }
+
+    getPrototypeOf(target: T) {
+        return this.inputPrototype;
     }
 }

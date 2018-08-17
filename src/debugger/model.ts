@@ -1,24 +1,45 @@
-import { ListenableObject, IListenableArray, IGenericListenable, MakeListenable, Mutation } from "../../epoxy";
+import { ListenableObject, IListenableArray, IGenericListenable, MakeListenable, Mutation, makeListenable } from "../../epoxy";
+import { BatchOperationInvocation } from "../global-state";
+import { BaseProxyHandler } from "../base-proxy";
 
 let DebugEventIdCounter = 0;
 
-export class AppDebugModel extends ListenableObject {
-    public readonly collections: IListenableArray<CollectionDebugModel>;
+export class DebugListenableObject extends ListenableObject {
+    constructor() {
+        super();
+        this.hideFromDebugger();
+    }
 }
 
-export class CollectionDebugModel extends ListenableObject {
-    // Display name of the collection.
-    public readonly debugName: string;
+export class AppDebugModel extends DebugListenableObject {
+    public readonly collections: IListenableArray<CollectionDebugModel> = makeListenable([]);
 
-    // Reference to the collection instance.
-    public readonly collection: IGenericListenable;
-
-    // List of mutations or transactions that have been applied since tracking started.
+    // List of mutations that have been applied since tracking started.
     // The newest mutations will be at the end of the list.
-    public readonly events: IListenableArray<GenericDebugEvent>;
+    public readonly mutations: IListenableArray<MutationDebugEvent<any>> = makeListenable([]);
+
+    // List of mutations that have been applied since tracking started, grouped into
+    // a tree of transactions.
+    public readonly events: IListenableArray<GenericDebugEvent> = makeListenable([]);
 }
 
-export abstract class GenericDebugEvent extends ListenableObject {
+export class CollectionDebugModel extends DebugListenableObject {
+    constructor(
+        // Display name of the collection.
+        public readonly label: string,
+
+        // Reference to the collection instance.
+        public readonly collection: IGenericListenable,
+
+        // List of mutations that have been applied since tracking started.
+        // The newest mutations will be at the end of the list.
+        public readonly mutations: IListenableArray<MutationDebugEvent<any>> = makeListenable([]),
+    ) {
+        super();
+    }
+}
+
+export abstract class GenericDebugEvent extends DebugListenableObject {
     public readonly id = DebugEventIdCounter++;
 
     constructor(
@@ -27,7 +48,7 @@ export abstract class GenericDebugEvent extends ListenableObject {
         // Call stack that lead to this debug event.
         public readonly callStack: string,
         // Batch stack that lead to this debug event.
-        public readonly batchStack: string[],
+        public readonly batchStack: BatchOperationInvocation[],
     ) {
         super();
     }
@@ -41,19 +62,37 @@ export abstract class GenericDebugEvent extends ListenableObject {
 }
 
 export class MutationDebugEvent<T> extends GenericDebugEvent {
-    constructor(public readonly mutation: DebuggableMutation<T>, callStack: string) {
+    constructor(
+        public readonly mutation: DebuggableMutation<T>, 
+        public readonly collection: IGenericListenable,
+        callStack: string
+    ) {
         super(Date.now(), callStack, mutation.batchStack);
     }
 }
 
 export class BatchOperationDebugEvent<T> extends GenericDebugEvent {
-    public readonly mutationEvents: MutationDebugEvent<T>[];
+    public readonly mutationEvents: IListenableArray<MutationDebugEvent<T>> = makeListenable([]);
+    public readonly childEvents: IListenableArray<BatchOperationDebugEvent<any>> = makeListenable([]);
+
+    constructor(
+        public readonly batch: BatchOperationInvocation,
+        callStack: string,
+        batchStack: BatchOperationInvocation[],
+    ) {
+        super(Date.now(), callStack, batchStack);
+    }
 
     addMutationEvent(event: MutationDebugEvent<T>) {
         this.mutationEvents.push(event);
     }
+
+    addChildEvent(event: BatchOperationDebugEvent<any>) {
+        this.childEvents.push(event);
+    }
 }
 
 export type DebuggableMutation<T> = Mutation<T> & {
-    batchStack: string[];
+    batchStack: BatchOperationInvocation[];
+    collection?: IGenericListenable;
 };

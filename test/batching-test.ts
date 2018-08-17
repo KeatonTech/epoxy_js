@@ -1,5 +1,5 @@
 import { BatchOperation, Mutation, Transaction, makeListenable, runTransaction, ArraySpliceMutation, EpoxyGlobalState } from '../epoxy';
-import { installDebugHooks, DebuggableMutation } from '../debugger';
+import { runWithDebugger, DebuggableMutation } from '../debugger';
 import { expect } from 'chai';
 // import mocha
 
@@ -82,70 +82,74 @@ describe('Batch Operations', () => {
     });
 
     it('should automatically name the transaction for the function name', () => {
-        installDebugHooks();
-        const listenable = makeListenable([]);
-        let lastMutation: DebuggableMutation<any>;
-        listenable.listen().subscribe((mutation) => {
-            lastMutation = mutation as DebuggableMutation<any>;
-        });
+        /** Uses runWithDebugger so mutations will have the batchStack property on them. */
+        runWithDebugger(() => {
+            const listenable = makeListenable([]);
+            let lastMutation: DebuggableMutation<any>;
+            listenable.listen().subscribe((mutation) => {
+                lastMutation = mutation as DebuggableMutation<any>;
+            });
 
-        class TestFuncs {
-            @Transaction()
-            static pushABunchOfStuffToAList(list: Array<number>) {
-                for (let i = 0; i < 100; i++) {
-                    list.push(i);
-                }
-            }
-        }
-
-        TestFuncs.pushABunchOfStuffToAList(listenable);
-        expect(lastMutation.batchStack.length).eqls(1);
-        expect(lastMutation.batchStack[0].name).eqls('pushABunchOfStuffToAList');
-    });
-
-    it('can accept explicit transaction names', () => {
-        installDebugHooks();
-        const listenable = makeListenable([]);
-        let lastMutation: DebuggableMutation<any>;
-        listenable.listen().subscribe((mutation) => {
-            lastMutation = mutation as DebuggableMutation<any>;
-        });
-
-        class TestFuncs {
-            @Transaction('TestFuncs: Bulk Add')
-            static pushABunchOfStuffToAList(list: Array<number>) {
-                for (let i = 0; i < 100; i++) {
-                    list.push(i);
-                }
-            }
-        }
-
-        TestFuncs.pushABunchOfStuffToAList(listenable);
-        expect(lastMutation.batchStack.length).eqls(1);
-        expect(lastMutation.batchStack[0].name).eqls('TestFuncs: Bulk Add');
-    });
-
-    it('works as a function call, in addition to the decorator', () => {
-        installDebugHooks();
-        const listenable = makeListenable([]);
-        let lastMutation: DebuggableMutation<any>;
-        listenable.listen().subscribe((mutation) => {
-            lastMutation = mutation as DebuggableMutation<any>;
-        });
-
-        class TestFuncs {
-            static pushABunchOfStuffToAList(list: Array<number>) {
-                runTransaction('BulkAdd', () => {
+            class TestFuncs {
+                @Transaction()
+                static pushABunchOfStuffToAList(list: Array<number>) {
                     for (let i = 0; i < 100; i++) {
                         list.push(i);
                     }
-                });
+                }
             }
-        }
 
-        TestFuncs.pushABunchOfStuffToAList(listenable);
-        expect(lastMutation.batchStack.length).eqls(1);
-        expect(lastMutation.batchStack[0].name).eqls('BulkAdd');
+            TestFuncs.pushABunchOfStuffToAList(listenable);
+            expect(lastMutation.batchStack.length).eqls(1);
+            expect(lastMutation.batchStack[0].name).eqls('pushABunchOfStuffToAList');
+        });
+    });
+
+    it('can accept explicit transaction names', () => {
+        runWithDebugger(() => {
+            const listenable = makeListenable([]);
+            let lastMutation: DebuggableMutation<any>;
+            listenable.listen().subscribe((mutation) => {
+                lastMutation = mutation as DebuggableMutation<any>;
+            });
+
+            class TestFuncs {
+                @Transaction('TestFuncs: Bulk Add')
+                static pushABunchOfStuffToAList(list: Array<number>) {
+                    for (let i = 0; i < 100; i++) {
+                        list.push(i);
+                    }
+                }
+            }
+
+            TestFuncs.pushABunchOfStuffToAList(listenable);
+            expect(lastMutation.batchStack.length).eqls(1);
+            expect(lastMutation.batchStack[0].name).eqls('TestFuncs: Bulk Add');
+        });
+    });
+
+    it('works as a function call, in addition to the decorator', () => {
+        runWithDebugger(() => {
+            const listenable = makeListenable([]);
+            let lastMutation: DebuggableMutation<any>;
+            listenable.listen().subscribe((mutation) => {
+                lastMutation = mutation as DebuggableMutation<any>;
+            });
+
+            class TestFuncs {
+                static pushABunchOfStuffToAList(list: Array<number>) {
+                    runTransaction('BulkAdd', () => {
+                        for (let i = 0; i < 100; i++) {
+                            list.push(i);
+                        }
+                    });
+                }
+            }
+
+            TestFuncs.pushABunchOfStuffToAList(listenable);
+            expect(lastMutation.batchStack.length).eqls(1);
+            expect(lastMutation.batchStack[0].name).eqls('BulkAdd');
+        });
     });
 
     it('blocks mutations outside of batches in strict mode', () => {
@@ -165,31 +169,32 @@ describe('Batch Operations', () => {
     });
 
     it('allows mutations inside batches in strict mode', () => {
-        installDebugHooks();
-        try {
-            const listenable = makeListenable([]);
-            EpoxyGlobalState.strictBatchingMode = true;
-            let lastMutation: DebuggableMutation<any>;
-            listenable.listen().subscribe((mutation) => {
-                lastMutation = mutation as DebuggableMutation<any>;
-            });
+        runWithDebugger(() => {
+            try {
+                const listenable = makeListenable([]);
+                EpoxyGlobalState.strictBatchingMode = true;
+                let lastMutation: DebuggableMutation<any>;
+                listenable.listen().subscribe((mutation) => {
+                    lastMutation = mutation as DebuggableMutation<any>;
+                });
 
-            class TestFuncs {
-                static pushABunchOfStuffToAList(list: Array<number>) {
-                    runTransaction('BulkAdd', () => {
-                        for (let i = 0; i < 100; i++) {
-                            list.push(i);
-                        }
-                    });
+                class TestFuncs {
+                    static pushABunchOfStuffToAList(list: Array<number>) {
+                        runTransaction('BulkAdd', () => {
+                            for (let i = 0; i < 100; i++) {
+                                list.push(i);
+                            }
+                        });
+                    }
                 }
-            }
 
-            TestFuncs.pushABunchOfStuffToAList(listenable);
-            expect(lastMutation.batchStack.length).eqls(1);
-            expect(lastMutation.batchStack[0].name).eqls('BulkAdd');
-        } finally {
-            EpoxyGlobalState.strictBatchingMode = false;
-        }
+                TestFuncs.pushABunchOfStuffToAList(listenable);
+                expect(lastMutation.batchStack.length).eqls(1);
+                expect(lastMutation.batchStack[0].name).eqls('BulkAdd');
+            } finally {
+                EpoxyGlobalState.strictBatchingMode = false;
+            }
+        });
     });
 
     it('should handle inner errors in nested transactions', () => {

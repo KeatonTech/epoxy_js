@@ -15,12 +15,15 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
 
     constructor(
         protected listenFunction: (input: WatchType) => any,
-    ) {}
+    ) {
+        // Initialization hook used by the debugger
+        BaseProxyHandler.initialize && BaseProxyHandler.initialize(this);
+    }
 
     // Subclasses: Override this.
     protected abstract copyData(target: T);
 
-    protected output: ListenableCollection;
+    public output: ListenableCollection;
     public setOutput(output: ListenableCollection) {
         this.output = output;
     }
@@ -62,7 +65,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
             delete this.propertySubscriptions[key];
         }
 
-        if ((value instanceof Array) || (value instanceof Object)) {
+        if (value && value[ListenableSignifier]) {
             this.propertySubscriptions[key] = (value as IGenericListenable)
                 .listen()
                 .subscribe((mutation) => {
@@ -182,7 +185,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     }
     
     /** Static wrapper function that is overridden in debug mode. */
-    protected static applyMutationInternalWrapped<T extends object>(
+    static applyMutationInternalWrapped<T extends object>(
         handler: BaseProxyHandler<T>, target: T, mutation: Mutation<any>
     ) {
         handler.applyMutationInternal(target, mutation);
@@ -261,7 +264,6 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     // PROXY FUNCTIONS
 
     get(target: T, property: PropertyKey) {
-        // Implement IListenableArray functions.
         if (BaseProxyHandler.LISTENABLE_FUNCTION_IMPL.hasOwnProperty(property)) {
             let value = BaseProxyHandler.LISTENABLE_FUNCTION_IMPL[property];
             if (value instanceof Function) {
@@ -275,7 +277,12 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
     // DEBUG OVERRIDES
 
     public debugLabel?: string;
-    static debugWithLabel?: (instance: BaseProxyHandler<any>, label: string) => void;
+    public hideFromDebugger?: boolean;
+
+    static debugWithLabel? = (instance: BaseProxyHandler<any>, label: string) => {
+        instance.debugLabel = label;
+    };
+    static initialize?: (instance: BaseProxyHandler<any>) => void;
     
 
     // ILISTENABLE FUNCTIONALITY
@@ -364,9 +371,15 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
          * Gives this listenable a unique value that can be displayed in debug tools.
          */
         debugWithLabel<T extends object>(handler: BaseProxyHandler<T>, target: T, label: string) {
-            if (BaseProxyHandler.debugWithLabel) {
-                BaseProxyHandler.debugWithLabel(handler, label);
-            }
+            BaseProxyHandler.debugWithLabel && BaseProxyHandler.debugWithLabel(handler, label);
+        },
+
+        /**
+         * Hides this collection from the debugger. Note that this is merely for convenience, it does
+         * not add any particular protections against this collection being read by debuggers.
+         */
+        hideFromDebugger<T extends object>(handler: BaseProxyHandler<T>) {
+            handler.hideFromDebugger = true;
         },
 
         /**

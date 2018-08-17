@@ -8,12 +8,12 @@ export type TypedObject<T> = {[key: string] : T, [key: number] : T};
 /**
  * Unique symbol that can be used to identify listenable collections.
  */
-export const ListenableSignifier = Symbol();
+export const ListenableSignifier = Symbol('epoxy-listenable');
 
 /**
  * Unique symbol that can be used to identify actors wrapping listenable collections.
  */
-export const ActorSignifier = Symbol();
+export const ActorSignifier = Symbol('epoxy-actor');
 
 /**
  * Extended interface for proxied arrays granting access to the change stream.
@@ -74,6 +74,12 @@ export interface IListenable<STRUCTURE_TYPE, OBSERVABLES_TYPE, LISTENABLE_TYPE> 
      * Gives this listenable a unique value that can be displayed in debug tools.
      */
     debugWithLabel(label: string): void;
+
+    /**
+     * Hides this collection from the debugger. Note that this is merely for convenience, it does
+     * not add any particular protections against this collection being read by debuggers.
+     */
+    hideFromDebugger(): void;
 
     /**
      * Tells the listenable to immediately broadcast its current value to the asObservable() stream.
