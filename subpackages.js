@@ -1,4 +1,5 @@
 exports.list = [
     "debugger",
-    "operators"
+    "operators",
+    "serializer",
 ];
