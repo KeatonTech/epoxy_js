@@ -19,6 +19,7 @@ export function debug(): AppDebugModel {
 export function runWithDebugger(cb: (debug: AppDebugModel) => void) {
     try {
         installDebugHooks();
+        installMutationExtensions();
     } finally {
         try {
             EpoxyDebuggerGlobalState.reset();

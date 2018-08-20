@@ -11,9 +11,6 @@ export function installSerializerExtension(extension: SerializerExtension) {
     if (extension.id.indexOf(':') !== -1) {
         throw new Error('Extension ids cannot contain the ":" character');
     }
-    if (installedExtensionsById[extension.id] !== undefined) {
-        throw new Error(`An encoder extension with the id ${extension.id} already exists`);
-    }
 
     let insertionIndex = installedSerializerExtensions.findIndex((existing) => {
         return existing.priority < extension.priority;
@@ -22,6 +19,12 @@ export function installSerializerExtension(extension: SerializerExtension) {
         installedSerializerExtensions.splice(insertionIndex, 0, extension);
     } else {
         installedSerializerExtensions.push(extension);
+    }
+
+    if (installedExtensionsById[extension.id] !== undefined) {
+        if (installedExtensionsById[extension.id].priority >= extension.priority) {
+            return;
+        }
     }
     installedExtensionsById[extension.id] = extension;
 }
