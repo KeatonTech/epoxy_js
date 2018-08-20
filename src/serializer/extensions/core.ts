@@ -1,6 +1,6 @@
-import { SerializerExtension } from "./types";
-import { encode, decode } from "./serializer";
-import { installSerializerExtension } from "./extensions";
+import { SerializerExtension } from "../types";
+import { encode, decode } from "../serializer";
+import { installSerializerExtension } from "../extensions";
 
 /** Encodes primitive values using JSON. */
 const EpoxyPrimitiveSerializer: SerializerExtension = {
