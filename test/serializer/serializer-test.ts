@@ -28,15 +28,27 @@ describe('Serializer', () => {
         expect(decode(serialized)).eqls('test');
     });
 
+    it('encodes and decodes null', () => {
+        const serialized = encode(null);
+        expect(serialized).eqls('_n:');
+        expect(decode(serialized)).eqls(null);
+    });
+
+    it('encodes and decodes undefined', () => {
+        const serialized = encode(undefined);
+        expect(serialized).eqls('_u:');
+        expect(decode(serialized)).eqls(undefined);
+    });
+
     it('encodes and decodes arrays', () => {
         const serialized = encode([1, '1', true]);
-        expect(serialized).eqls('_a:["_:1","_:\\"1\\"","_:true"]');
+        expect(serialized).eqls('_a:"_:1","_:\\"1\\"","_:true"');
         expect(decode(serialized)).eqls([1, '1', true]);
     });
 
     it('encodes and decodes objects', () => {
         const serialized = encode({a: 1, b: '1', c: false});
-        expect(serialized).eqls('_o:{"a":"_:1","b":"_:\\"1\\"","c":"_:false"}');
+        expect(serialized).eqls('_o:"a":"_:1","b":"_:\\"1\\"","c":"_:false"');
         expect(decode(serialized)).eqls({a: 1, b: '1', c: false});
     });
 
@@ -64,7 +76,7 @@ describe('Serializer', () => {
         })
 
         const serialized = encode({real: 'yes'});
-        expect(serialized).eqls('_o:{"real":"_:\\"yes\\""}');
+        expect(serialized).eqls('_o:"real":"_:\\"yes\\""');
         expect(decode(serialized)).eqls({real: 'yes'});
     });
 
@@ -78,7 +90,7 @@ describe('Serializer', () => {
         })
 
         const serialized = encode({real: 'yes'});
-        expect(serialized).eqls('_o:{"real":"_:\\"yes\\""}');
+        expect(serialized).eqls('_o:"real":"_:\\"yes\\""');
         expect(decode(serialized)).eqls({real: 'yes'});
     });
 });

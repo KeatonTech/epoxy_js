@@ -4,6 +4,18 @@ import { BaseProxyHandler } from "../base-proxy";
 
 let DebugEventIdCounter = 0;
 
+export enum MutationApplicationState {
+    AWAITING,           // Mutations that have not yet been applied to the state.
+    OVERWRITTEN,        // Mutations that did not make it into any batch mutation because
+                        //  they were overwritten by a later mutation.
+    BATCHED,            // Mutations created inside batch operations are grouped together
+                        //  before being applied to the state, therefore individual mutations
+                        //  within a batch cannot be controlled independently.
+    ROLLED_BACK,        // Mutations that were rolled back due to an error in a transaction.
+    APPLIED,            // Mutations that are currently affecting the state.
+    UNAPPLIED,          // Mutations that were removed in the debugger.
+}
+
 export class DebugListenableObject extends ListenableObject {
     constructor() {
         super();
@@ -53,8 +65,8 @@ export abstract class GenericDebugEvent extends DebugListenableObject {
         super();
     }
 
-    // Whether the operation is currently applied to the state of the app.
-    public applied = true;
+    // Tracks the current state of the event as it is processed and modified.
+    public state = MutationApplicationState.AWAITING;
 
     // Whether the operation was successfully broadcasted. This will be false for
     //  mutations that occured in transactions that threw errors.
@@ -95,4 +107,18 @@ export class BatchOperationDebugEvent<T> extends GenericDebugEvent {
 export type DebuggableMutation<T> = Mutation<T> & {
     batchStack: BatchOperationInvocation[];
     collection?: IGenericListenable;
+
+    // Tracks the current state of the event as it is processed and modified.
+    state: MutationApplicationState;
+
+    // For mutations created by a mutation sequence, this field lists all of the
+    //  original mutations that fed into it.
+    derivedFrom?: Array<DebuggableMutation<T>>;
+
+    // For mutations that did not make it into the composite, this field contains
+    //  the mutation that overwrote their affect.
+    overwrittenBy?: DebuggableMutation<T>;
+
+    // For mutations that were combined into a composite, this is the composite.
+    combinedInto?: DebuggableMutation<T>;
 };

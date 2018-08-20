@@ -7,6 +7,7 @@ export function encode(data: any) {
                 return extension.id + ":" + extension.encode(data);
             }
         } catch (e) {
+            console.error(e);
             continue;
         }
     }

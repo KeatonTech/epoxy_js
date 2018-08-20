@@ -1,12 +1,14 @@
 import { AppDebugModel } from './model';
 import { EpoxyDebuggerGlobalState } from "./debugger_global_state";
 import { installDebugHooks, uninstallDebugHooks } from "./install_debug_hooks";
+import { installMutationExtensions } from './mutation_serializer';
 
 /**
  * Public interface for debugging functionality.
  */
 export function debug(): AppDebugModel {
     installDebugHooks();
+    installMutationExtensions();
     return EpoxyDebuggerGlobalState.model;
 }
 

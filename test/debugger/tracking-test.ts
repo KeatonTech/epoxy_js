@@ -72,7 +72,6 @@ describe('Debugger Mutation Tracking', () => {
                 });
             });
 
-            console.log(debug.mutations);
             expect(debug.mutations.length).eqls(3);
             expect(debug.events.length).eqls(1);
             expect(debug.events[0]).instanceof(BatchOperationDebugEvent);
