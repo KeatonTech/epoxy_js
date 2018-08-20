@@ -33,7 +33,7 @@ const EpoxyValueMutationSerializer: SerializerExtension = {
 /** Encodes PropertyMutation objects */
 const EpoxyPropertyMutationSerializer: SerializerExtension = {
     id: 'epxy_mp',
-    priority: 90,
+    priority: 80,
     test: (data) => data instanceof PropertyMutation,
 
     encode: (data) => {
@@ -60,7 +60,7 @@ const EpoxyPropertyMutationSerializer: SerializerExtension = {
 /** Encodes SubpropertyMutation objects */
 const EpoxySubpropertyMutationSerializer: SerializerExtension = {
     id: 'epxy_ms',
-    priority: 90,
+    priority: 80,
     test: (data) => data instanceof SubpropertyMutation,
 
     encode: (data) => {
@@ -86,7 +86,7 @@ const EpoxySubpropertyMutationSerializer: SerializerExtension = {
 /** Encodes ListSpliceMutation objects */
 const EpoxyArraySpliceMutationSerializer: SerializerExtension = {
     id: 'epxy_ma',
-    priority: 90,
+    priority: 80,
     test: (data) => data instanceof ArraySpliceMutation,
 
     encode: (data) => {
