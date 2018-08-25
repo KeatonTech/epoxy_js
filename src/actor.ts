@@ -29,7 +29,7 @@ class ActorProxyHandler extends BaseProxyHandler<ListenableCollection> {
     protected filteredMutations: Observable<Mutation<any>>;
 
     constructor(
-        private name: string | Symbol,
+        public readonly name: string | Symbol,
         private collection: ListenableCollection,
     ) {
         super(() => null);
@@ -128,6 +128,28 @@ class ActorProxyHandler extends BaseProxyHandler<ListenableCollection> {
          */
         observables<T extends ListenableCollection>(handler: ActorProxyHandler, target: T) {
             return handler.observables();
+        },
+
+        /**
+         * Applies a given mutation to this collection.
+         */
+        applyMutation<T extends ListenableCollection>(
+            handler: ActorProxyHandler, target: T, mutation: Mutation<any>
+        ) {
+            const actorMutation = mutation.copy();
+            actorMutation.createdBy = handler.name;
+            target.applyMutation(actorMutation);
+        },
+
+        /**
+         * Applies the opposite of a given mutation to this collection, undoing the change.
+         */
+        unapplyMutation<T extends ListenableCollection>(
+            handler: ActorProxyHandler, target: T, mutation: Mutation<any>
+        ) {
+            const actorMutation = mutation.copy();
+            actorMutation.createdBy = handler.name;
+            target.unapplyMutation(actorMutation);
         },
     }
 }
