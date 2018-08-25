@@ -1,13 +1,12 @@
 import {EpoxyGlobalState} from './global-state';
 
-/**
- * Assigns unique mutation indexes using a simple counter.
- */
-let GlobalMutationIndexer = 0;
+function makeMutationId() {
+    return 'xxxxxxxxxxxxxxxxxxxxxxxxx'.replace(/x/g, (c) => Math.floor(Math.random() * 36).toString(36));
+}
 
 export abstract class Mutation<T> {
-    public readonly id: number;
-    public readonly createdBy: string | Symbol;
+    public id: string;
+    public createdBy: string | Symbol;
 
     /** Static wrapper function that is overridden in debug mode. */
     static initialize?: (instance: Mutation<any>) => void;
@@ -15,7 +14,7 @@ export abstract class Mutation<T> {
     constructor(
         public key: PropertyKey,
     ) {
-        this.id = GlobalMutationIndexer++;
+        this.id = makeMutationId();
         this.createdBy = EpoxyGlobalState.currentActor;
         if (Mutation.initialize) Mutation.initialize(this);
     }
