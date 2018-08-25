@@ -64,9 +64,11 @@ class ActorProxyHandler extends BaseProxyHandler<ListenableCollection> {
             const handler = this;
             return function() {
                 const callArgs = Array.prototype.slice.call(arguments);
+                let result;
                 EpoxyGlobalState.runAsActor(handler.name, () => {
-                    originalFn.apply(target, callArgs);
+                    result = originalFn.apply(target, callArgs);
                 });
+                return result;
             };
         }
 
