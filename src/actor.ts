@@ -44,6 +44,10 @@ class ActorProxyHandler extends BaseProxyHandler<ListenableCollection> {
     }
 
     get(target: ListenableCollection, property: PropertyKey) {
+        // Pass the constructor through unchanged so type checking works as intended.
+        if (property === 'constructor') {
+            return target.constructor;
+        }
 
         // Override listener functions to filter out any mutations caused by this actor.
         if (ActorProxyHandler.LISTENER_FUNCTION_OVERRIDES.hasOwnProperty(property)) {
