@@ -36,6 +36,10 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             const spliceArgs = [mutation.key as number, mutation.deleted.length];
             spliceArgs.push.apply(spliceArgs, mutation.inserted);
             target.splice.apply(target, spliceArgs);
+        } else if (mutation instanceof Mutations.ValueMutation) {
+            const spliceArgs = [0, target.length];
+            spliceArgs.push.apply(spliceArgs, mutation.newValue);
+            target.splice.apply(target, spliceArgs);
         } else {
             super.applyMutationInternal(target, mutation);
         }
