@@ -14,7 +14,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         private initialValues: T,
     ) {
         super(listenFunction);
-        Object.keys(initialValues).forEach((key: PropertyKey) => {
+        Object.keys(initialValues).forEach((key: string | number) => {
             this.watchSubpropertyChanges(initialValues, key, initialValues[key]);
         });
     }
@@ -58,7 +58,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
 
     // PROXY FUNCTIONS
 
-    get(target: T, property: PropertyKey) {
+    get(target: T, property: string | number) {
         EpoxyGlobalState.registerGetterCall(this.output, property);
         if (property === 'constructor') return this.originalConstructor;
         return super.get(target, property) 
@@ -66,7 +66,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
             || target[property];
     }
 
-    set(target: T, property: PropertyKey, value: T | Observable<T>) {
+    set(target: T, property: string | number, value: T | Observable<T>) {
         if (value instanceof Observable) {
             this.watchObservableProperty(target, property, value);
             return true;
@@ -81,7 +81,7 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
         return true;
     }
 
-    deleteProperty(target: T, property: PropertyKey) {
+    deleteProperty(target: T, property: string | number) {
         this.removeSubpropertyWatcher(property);
         const oldValue = target[property];
         this.applyMutation(target, new Mutations.PropertyMutation(property, oldValue, undefined));
