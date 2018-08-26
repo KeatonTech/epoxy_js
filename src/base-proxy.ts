@@ -52,7 +52,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
 
     // WATCH SUBPROPERTY CHANGES
 
-    protected watchSubpropertyChanges(target: T, key: PropertyKey, value: WatchType | Observable<any>) {
+    protected watchSubpropertyChanges(target: T, key: string | number, value: WatchType | Observable<any>) {
         const keySymbol = Symbol();
         this.propertyKeys.set(keySymbol, key);
 
@@ -77,7 +77,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         }
     }
 
-    protected watchObservableProperty(target: T, key: PropertyKey, value: Observable<any>) {
+    protected watchObservableProperty(target: T, key: string | number, value: Observable<any>) {
         const keySymbol = Symbol();
         this.propertyKeys.set(keySymbol, key);
 
@@ -99,7 +99,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         }
     }
 
-    protected removeSubpropertyWatcher(propertyKey: PropertyKey) {
+    protected removeSubpropertyWatcher(propertyKey: string | number) {
         if (!this.propertySubscriptions[propertyKey]) return;
         this.propertySubscriptions[propertyKey].unsubscribe();
         delete this.propertySubscriptions[propertyKey];
@@ -119,9 +119,9 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
      * @param mapperFunction Returns the new key that an existing one should map to, or null if the specific
      *  subproperty was deleted (which will cause removeSubpropertyWatcher() to be called automatically).
      */
-    protected remapPropertyKeys(mapperFunction: (currentKey: PropertyKey) => PropertyKey | null) {
+    protected remapPropertyKeys(mapperFunction: (currentKey: string | number) => string | number | null) {
         const newSubpropertyKeys = new Map<Symbol, PropertyKey>();
-        this.propertyKeys.forEach((currentKey: PropertyKey, symbol: Symbol) => {
+        this.propertyKeys.forEach((currentKey: string | number, symbol: Symbol) => {
             const newKey = mapperFunction(currentKey);
             if (newKey === null) {
                 this.removeSubpropertyWatcher(currentKey);
@@ -137,17 +137,17 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
 
     observables<U extends ListenableCollection>(): U {
         return new Proxy(this.output, {
-            get: (target: U, key: PropertyKey) => {
+            get: (target: U, key: string | number) => {
                 return this.getObservable(target, key);
             },
 
-            set: (target: U, key: PropertyKey, value: any) => {
+            set: (target: U, key: string | number, value: any) => {
                 throw new Error('Cannot set properties on a collection\'s observables');
             }
         }) as U;
     }
 
-    getObservable<U>(target: object, key: PropertyKey): Observable<U> {
+    getObservable<U>(target: object, key: string | number): Observable<U> {
         if (target.constructor.prototype && target.constructor.prototype[key]) {
             throw new Error('Cannot observe a prototype function like ' + (key as string));
         }
@@ -352,7 +352,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         setComputed<T extends object>(
             handler: BaseProxyHandler<T>,
             target: T,
-            key: PropertyKey,
+            key: string | number,
             value: () => any | Observable<any>
         ) {
             if (value instanceof Function) {

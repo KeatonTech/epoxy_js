@@ -69,7 +69,7 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
         return super.get(target, property) || target[property];
     }
 
-    set(target: T[], property: PropertyKey, value: T | Observable<T>) {
+    set(target: T[], property: string | number, value: T | Observable<T>) {
         if (value instanceof Observable) {
             this.watchObservableProperty(target, property, value);
             return true;
@@ -137,7 +137,7 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             // (index) will have changed. For example, if there is an IWatchedArray at index 2 and a
             // new item is inserted at index 1, any future mutations to that IWatchedArray should be
             // reported as coming from index 3.
-            proxy.remapPropertyKeys((currentKey: PropertyKey) => {
+            proxy.remapPropertyKeys((currentKey: string | number) => {
                 if (typeof(currentKey) == 'number') {
                     if (currentKey < startIndex) {
                         return currentKey
