@@ -1,5 +1,8 @@
 # Epoxy JS
+
 The reactive glue that binds web apps together. Epoxy is a lightweight library for building reactive data models.
+
+![Build Status](https://travis-ci.com/KeatonTech/epoxy_js.svg?branch=master)
 
 ## What is it?
 
