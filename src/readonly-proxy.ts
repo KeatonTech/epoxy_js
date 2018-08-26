@@ -15,18 +15,18 @@ export class ReadonlyProxyHandler<T extends object> implements ProxyHandler<T> {
         broadcastCurrentValue: true,
     };
     
-    get(target: T, property: PropertyKey) {
+    get(target: T, property: string | number) {
         if (ReadonlyProxyHandler.GENERIC_DISALLOWED_KEYS.hasOwnProperty(property)) {
             throw new ReadonlyException(`Cannot get property ${property} on a readonly object.`);
         }
         return target[property];
     }
 
-    set(target: T, property: PropertyKey, value: any): boolean {
+    set(target: T, property: string | number, value: any): boolean {
         throw new ReadonlyException(`Cannot set property ${property} on a readonly object`);
     }
 
-    deleteProperty(target: T, property: PropertyKey): boolean {
+    deleteProperty(target: T, property: string | number): boolean {
         throw new ReadonlyException(`Cannot delete property ${property} on a readonly object`);
     }
 }
@@ -48,7 +48,7 @@ export class ReadonlyArrayProxyHandler<T> extends ReadonlyProxyHandler<T[]> {
         unshift: true,
     };
     
-    get(target: T[], property: PropertyKey) {
+    get(target: T[], property: string | number) {
         if (ReadonlyArrayProxyHandler.ARRAY_DISALLOWED_KEYS.hasOwnProperty(property)) {
             throw new ReadonlyException(`Cannot get property ${property} on a readonly array.`);
         }
