@@ -47,7 +47,9 @@ export class ObjectProxyHandler<T extends Object> extends BaseProxyHandler<T> {
             delete target[mutation.key];
         } else if (mutation instanceof Mutations.ValueMutation) {
             Object.keys(target).forEach((key) => delete target[key]);
-            Object.keys(mutation.newValue).forEach((key) => target[key] = mutation.newValue[key]);
+            Object.keys(mutation.newValue).forEach((key) => {
+                target[key] = this.listenFunction(mutation.newValue[key]);
+            });
         } else {
             super.applyMutationInternal(target, mutation);
         }

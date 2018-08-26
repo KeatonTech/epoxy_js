@@ -34,11 +34,11 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
     applyMutationInternal(target: T[], mutation: Mutations.Mutation<any>) {
         if (mutation instanceof Mutations.ArraySpliceMutation) {
             const spliceArgs = [mutation.key as number, mutation.deleted.length];
-            spliceArgs.push.apply(spliceArgs, mutation.inserted);
+            spliceArgs.push.apply(spliceArgs, mutation.inserted.map(this.listenFunction));
             target.splice.apply(target, spliceArgs);
         } else if (mutation instanceof Mutations.ValueMutation) {
             const spliceArgs = [0, target.length];
-            spliceArgs.push.apply(spliceArgs, mutation.newValue);
+            spliceArgs.push.apply(spliceArgs, mutation.newValue.map(this.listenFunction));
             target.splice.apply(target, spliceArgs);
         } else {
             super.applyMutationInternal(target, mutation);
