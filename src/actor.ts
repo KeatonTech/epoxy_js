@@ -3,7 +3,7 @@ import { filter } from 'rxjs/operators';
 import { EpoxyGlobalState } from './global-state';
 import { BaseProxyHandler } from './base-proxy';
 import { ActorSignifier, IActor, ListenableCollection, ListenableSignifier } from './types';
-import { Mutation } from './mutations';
+import { Mutation, SubpropertyMutation } from './mutations';
 
 /**
  * An actor wraps a listenable collection in such a way that mutations caused
@@ -29,7 +29,7 @@ class ActorProxyHandler extends BaseProxyHandler<ListenableCollection> {
     protected filteredMutations: Observable<Mutation<any>>;
 
     constructor(
-        public readonly name: string | Symbol,
+        private readonly name: string | Symbol,
         private collection: ListenableCollection,
     ) {
         super(() => null);
@@ -93,6 +93,19 @@ class ActorProxyHandler extends BaseProxyHandler<ListenableCollection> {
         return true;
     }
 
+    /**
+     * Helper function that applies this actor's stamp to a mutation, including any
+     * nested subproperty mutations.
+     */
+    locallyCreatedMutationCopy<T>(mutation: Mutation<T>): Mutation<T> {
+        const copy = mutation.copy();
+        copy.createdBy = this.name;
+        if (copy instanceof SubpropertyMutation) {
+            copy.mutation = this.locallyCreatedMutationCopy(copy.mutation);
+        }
+        return copy;
+    }
+
 
     // LISTENER FUNCTION OVERRIDES
 
@@ -140,9 +153,7 @@ class ActorProxyHandler extends BaseProxyHandler<ListenableCollection> {
         applyMutation<T extends ListenableCollection>(
             handler: ActorProxyHandler, target: T, mutation: Mutation<any>
         ) {
-            const actorMutation = mutation.copy();
-            actorMutation.createdBy = handler.name;
-            target.applyMutation(actorMutation);
+            target.applyMutation(handler.locallyCreatedMutationCopy(mutation));
         },
 
         /**
@@ -151,9 +162,7 @@ class ActorProxyHandler extends BaseProxyHandler<ListenableCollection> {
         unapplyMutation<T extends ListenableCollection>(
             handler: ActorProxyHandler, target: T, mutation: Mutation<any>
         ) {
-            const actorMutation = mutation.copy();
-            actorMutation.createdBy = handler.name;
-            target.unapplyMutation(actorMutation);
+            target.unapplyMutation(handler.locallyCreatedMutationCopy(mutation));
         },
     }
 }
