@@ -31,7 +31,7 @@ export function filter<T>(
             if (filterFunction(collection[mutation.key])) {
                 filteredListenable.applyMutation(mutation);
             } else {
-                delete filteredListenable[mutation.key];
+                delete filteredListenable[mutation.key as string | number];
             }
         });
 
