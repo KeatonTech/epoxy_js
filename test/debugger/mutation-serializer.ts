@@ -3,7 +3,7 @@ import { encode, decode, installSerializerExtension, installCoreExtensions, rese
 import { DebuggableMutation } from '../../debugger';
 import { installMutationExtensions } from '../../src/debugger/mutation_serializer';
 import { expect } from 'chai';
-// import mocha
+import 'mocha';
 
 describe('Debugger Mutation Serializer', () => {
 

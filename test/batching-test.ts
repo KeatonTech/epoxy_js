@@ -1,7 +1,7 @@
 import { BatchOperation, Mutation, Transaction, makeListenable, runTransaction, ArraySpliceMutation, EpoxyGlobalState } from '../epoxy';
 import { runWithDebugger, DebuggableMutation } from '../debugger';
 import { expect } from 'chai';
-// import mocha
+import 'mocha';
 
 describe('Batch Operations', () => {
     it('should only dispatch one change notification after a transaction', () => {

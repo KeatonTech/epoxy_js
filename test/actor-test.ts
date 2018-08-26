@@ -1,6 +1,6 @@
 import { makeListenable, asActor, computed, Mutation, ArraySpliceMutation } from '../epoxy';
 import { expect } from 'chai';
-// import mocha
+import 'mocha';
 
 describe('Actors', () => {
     it('should not receive direct property changes caused by the actor itself', () => {

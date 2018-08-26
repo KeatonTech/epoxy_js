@@ -2,7 +2,7 @@ import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, comp
 import { expect } from 'chai';
 import { last } from 'rxjs/operators';
 import { ReadonlyException } from '../src/readonly-proxy';
-// import mocha
+import 'mocha';
 
 describe('Object Models', () => {
     it('should make a listenable object when constructed', () => {

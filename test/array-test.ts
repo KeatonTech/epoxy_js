@@ -2,7 +2,7 @@ import {makeListenable, Mutation, ArraySpliceMutation, SubpropertyMutation, comp
 import { expect } from 'chai';
 import { last, reduce } from 'rxjs/operators';
 import { Subject, BehaviorSubject, Observable } from 'rxjs';
-// import mocha
+import 'mocha';
 
 describe('Array Watcher', () => {
 

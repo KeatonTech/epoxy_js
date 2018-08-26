@@ -3,7 +3,7 @@ import { trackMutationForward } from '../../src/util/track-mutation-forward';
 import { expect } from 'chai';
 import 'mocha';
 
-describe('Util / Track Mutation Forward', () => {
+describe('Util / Track Mutation', () => {
     it('should return the original mutation unchanged when it is not affected', () => {
         const original = new PropertyMutation('a', 0, 1);
         const tracked = trackMutationForward(
@@ -174,8 +174,8 @@ describe('Util / Track Mutation Forward', () => {
         );
         expect(tracked.key).eqls(3);
     });
-    
-    /* it('should remove duplicate deletions', () => {
+
+    it('should remove duplicate deletions', () => {
         const original = new ArraySpliceMutation(4, [1, 2, 3], []);
         const tracked = trackMutationForward(
             original,
@@ -186,5 +186,5 @@ describe('Util / Track Mutation Forward', () => {
         expect(tracked.key).eqls(3);
         expect(tracked.deleted).eqls([3]);
         expect(tracked.inserted.length).eqls(0);
-    }); */
+    });
 });

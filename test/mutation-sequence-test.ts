@@ -1,7 +1,7 @@
 import { Mutation, PropertyMutation, SubpropertyMutation, ArraySpliceMutation, ValueMutation, makeListenable, ListenableCollection, IListenableArray } from '../epoxy';
 import { MutationSequence } from '../src/mutation-sequence';
 import { expect } from 'chai';
-// import mocha
+import 'mocha';
 
 describe('Mutation sequence optimization', () => {
     describe('for objects', () => {

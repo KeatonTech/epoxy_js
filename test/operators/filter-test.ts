@@ -1,7 +1,7 @@
 import { makeListenable, Mutation, ArraySpliceMutation, PropertyMutation, ReadonlyException, TypedObject } from '../../epoxy'
 import { filter } from '../../operators';
 import { expect } from 'chai';
-// import mocha
+import 'mocha';
 
 describe('Filtered Listenable Collections', () => {
     it('returns a readonly array', () => {

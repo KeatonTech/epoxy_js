@@ -1,7 +1,7 @@
 import { makeListenable, asActor, computed, Mutation, ArraySpliceMutation } from '../../epoxy';
 import { encode, decode, installSerializerExtension, installCoreExtensions, resetSerializerExtensions } from '../../serializer'
 import { expect } from 'chai';
-// import mocha
+import 'mocha';
 
 describe('Serializer', () => {
 

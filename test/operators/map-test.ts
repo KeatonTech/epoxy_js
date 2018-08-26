@@ -1,7 +1,7 @@
 import { makeListenable, Mutation, ArraySpliceMutation, PropertyMutation, ReadonlyException } from '../../epoxy'
 import { map } from '../../operators';
 import { expect } from 'chai';
-// import mocha
+import 'mocha';
 
 describe('Mapped Listenable Collections', () => {
     it('returns a readonly collection', () => {

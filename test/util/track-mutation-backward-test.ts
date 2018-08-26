@@ -1,7 +1,7 @@
 import { Mutation, PropertyMutation, SubpropertyMutation, ValueMutation, ArraySpliceMutation } from '../../epoxy';
 import { trackMutationBackward } from '../../src/util/track-mutation-backward';
 import { expect } from 'chai';
-// import mocha
+import 'mocha';
 
 describe('Util / Track Mutation Backward', () => {
     it('should return the original mutation unchanged when it is not affected', () => {

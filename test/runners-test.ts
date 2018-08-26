@@ -1,7 +1,7 @@
 import { computed, observe, autorun, autorunTree, makeListenable, optionallyComputed } from '../epoxy';
 import { expect } from 'chai';
 import { last } from 'rxjs/operators';
-// import mocha
+import 'mocha';
 
 describe('Function runners', () => {
     it('should re-run the function whenever a dependency value changes', () => {

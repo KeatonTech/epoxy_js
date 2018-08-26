@@ -1,7 +1,7 @@
 import { makeListenable, Mutation, ArraySpliceMutation, runTransaction } from '../../epoxy'
 import { runWithDebugger, BatchOperationDebugEvent } from '../../debugger';
 import { expect } from 'chai';
-// import mocha
+import 'mocha';
 
 describe('Debugger Mutation Tracking', () => {
     it('tracks mutations on an unlabeled array', () => {
