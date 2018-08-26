@@ -83,13 +83,18 @@ export class ArraySpliceMutation<T> extends Mutation<T> {
  * Returns a mutation that cancels out the given mutation, essentially undoing it.
  */
 export function invertMutation<T>(mutation: Mutation<T>): Mutation<T> {
+    let inverted: Mutation<T>;
     if (mutation instanceof PropertyMutation) {
-        return new PropertyMutation<T>(mutation.key, mutation.newValue, mutation.oldValue);
+        inverted = new PropertyMutation<T>(mutation.key, mutation.newValue, mutation.oldValue);
     } else if (mutation instanceof ValueMutation) {
-        return new ValueMutation<T>(mutation.newValue, mutation.oldValue);
+        inverted = new ValueMutation<T>(mutation.newValue, mutation.oldValue);
     } else if (mutation instanceof ArraySpliceMutation) {
-        return new ArraySpliceMutation<T>(mutation.key as number, mutation.inserted, mutation.deleted);
+        inverted = new ArraySpliceMutation<T>(mutation.key as number, mutation.inserted, mutation.deleted);
     } else if (mutation instanceof SubpropertyMutation) {
-        return new SubpropertyMutation(mutation.key, invertMutation(mutation.mutation));
+        inverted = new SubpropertyMutation(mutation.key, invertMutation(mutation.mutation));
+    } else {
+        throw new Error('Could not invert unknown mutation type');
     }
+    inverted.createdBy = mutation.createdBy;
+    return inverted;
 }
