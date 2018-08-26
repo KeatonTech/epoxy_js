@@ -70,7 +70,9 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                 .listen()
                 .subscribe((mutation) => {
                     const currentKey = this.propertyKeys.get(keySymbol);
-                    this.broadcastMutation(target, new SubpropertyMutation(currentKey, mutation));
+                    const subpropertyMutation = new SubpropertyMutation(currentKey, mutation);
+                    subpropertyMutation.createdBy = mutation.createdBy;
+                    this.broadcastMutation(target, subpropertyMutation);
                 })
         }
     }
@@ -197,7 +199,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         } else if (mutation instanceof ValueMutation) {
             target = mutation.newValue;
         } else if (mutation instanceof PropertyMutation) {
-            target[mutation.key] = mutation.newValue;
+            target[mutation.key] = this.listenFunction(mutation.newValue);
         } else {
             throw new Error('Could not apply mutation: Unknown or invalid mutation type');
         }
@@ -235,7 +237,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
                             //  'undo' mutations are not treated as new mutations by the debugger.
                             // Similarly, this does not use the public applyMutation function
                             //  because this mutation should not be broadcast.
-                            this.applyMutationInternal(target, invertMutation(mutation));
+                            BaseProxyHandler.rollbackMutationInternalWrapper(this, target, mutation);
                         } else {
                             // Re-calls the broadcastMutation function instead of directly pushing
                             //  to the mutations stream to allow for nested batches. In those cases,
@@ -251,6 +253,13 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
         } else {
             BaseProxyHandler.broadcastMutationInternalWrapper(this, mutation);
         }
+    }
+
+    /** Static wrapper function that is overridden in debug mode. */
+    protected static rollbackMutationInternalWrapper<T extends object>(
+        instance: BaseProxyHandler<T>, target: T, mutation: Mutation<any>
+    ) {
+        instance.applyMutationInternal(target, invertMutation(mutation));
     }
 
     /** Static wrapper function that is overridden in debug mode. */
