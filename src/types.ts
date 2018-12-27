@@ -126,7 +126,7 @@ export interface IListenableArray<T> extends Array<T>, IListenable<
  * Extended interface for proxied objects granting access to the change stream.
  */
 export interface IListenableObject<T> extends Object, IListenable<
-    TypedObject<T>,             // Structure Type
+    T,                          // Structure Type
     TypedObject<Observable<T>>, // Observables Structure Type
     IListenableObject<T>> {}    // Listenable Type
 

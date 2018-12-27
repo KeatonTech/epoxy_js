@@ -9,7 +9,7 @@ export function MakeListenable<T extends Constructable>(Base: T) {
     return class extends Base implements IListenableObject<any> {
         constructor(...args) {
             super(...args);
-            return makeListenable(this, true);
+            return makeListenable(this, true) as any;
         }
 
         listen(): Observable<Mutation<any>> {
