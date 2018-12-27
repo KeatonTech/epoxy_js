@@ -140,3 +140,19 @@ export type ListenableCollection = IListenableArray<any> | IListenableObject<any
  */
 export type WatchType = IListenableArray<any> | IListenableObject<any> | Observable<any> |
                         string | number | boolean | symbol;
+
+/**
+ * Converts a static object type into a Listenable version (output of makeListenable).
+ */
+export type Listenable<T> = 
+    T extends Array<infer U> ? (IListenableArray<T> & Array<U> & MappedListenableArray<U>) :
+    T extends {} ? (IListenableObject<T> & MappedListenableObject<T>) :
+    T;
+
+interface MappedListenableArray<T> {
+    [index: number]: Listenable<T>;
+}
+
+type MappedListenableObject<T extends {}> = {
+    [P in keyof T]: T[P] extends {} ? Listenable<T[P]> : T[P]
+}
