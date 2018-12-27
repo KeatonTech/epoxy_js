@@ -60,7 +60,7 @@ export abstract class BaseProxyHandler<T extends object> implements ProxyHandler
             return this.watchObservableProperty(target, key, value);
         }
 
-        if (this.propertySubscriptions[key] !== undefined) {
+        if (this.propertySubscriptions.hasOwnProperty(key)) {
             this.propertySubscriptions[key].unsubscribe();
             delete this.propertySubscriptions[key];
         }
