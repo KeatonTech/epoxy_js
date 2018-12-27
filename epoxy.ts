@@ -1,7 +1,7 @@
 export * from './src/types';
 export * from './src/mutations';
 
-export { makeListenable } from './src/make-listenable';
+export { excludeTypeFromMakeListenable, makeListenable } from './src/make-listenable';
 export { isListenable } from './src/util/is-listenable';
 export { asActor } from './src/actor';
 export { autorun, autorunTree, computed, observe, optionallyComputed } from './src/runners';
