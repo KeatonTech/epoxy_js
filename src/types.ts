@@ -119,7 +119,7 @@ export type IListenableTypeOutput<T extends Object> = T & IGenericListenable;
 export interface IListenableArray<T> extends Array<T>, IListenable<
     T[],                        // Structure Type
     Array<Observable<T>>,       // Observables Structure Type
-    Listenable<T>               // Listenable Type
+    Listenable<T[]>             // Listenable Type
 > {}
 
 /**
@@ -156,7 +156,7 @@ export type Listenable<T> =
     T extends Symbol ? T :
     T extends object ? (IListenableObject<T> & MappedListenableObject<T>) :
     T;
-    
+
 interface MappedListenableArray<T> {
     [index: number]: Listenable<T>;
 }
