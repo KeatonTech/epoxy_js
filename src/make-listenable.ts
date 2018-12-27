@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
  * for things like HTMLElement that have circular references and just generally don't make sense
  * to directly watch.
  */
-const EXCLUDE_TYPES: Array<new ()=>{}> = [Element];
+const EXCLUDE_TYPES: Array<new ()=>{}> = [];
 
 /**
  * Declare that a given type should not be made listenable.
