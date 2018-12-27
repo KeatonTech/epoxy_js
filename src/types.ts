@@ -145,8 +145,8 @@ export type WatchType = IListenableArray<any> | IListenableObject<any> | Observa
  * Converts a static object type into a Listenable version (output of makeListenable).
  */
 export type Listenable<T> = 
-    T extends Array<infer U> ? (IListenableArray<T> & Array<U> & MappedListenableArray<U>) :
-    T extends {} ? (IListenableObject<T> & MappedListenableObject<T>) :
+    T extends Array<infer U> ? (IListenableArray<U> & MappedListenableArray<U>) :
+    T extends object ? (IListenableObject<T> & MappedListenableObject<T>) :
     T;
 
 interface MappedListenableArray<T> {
