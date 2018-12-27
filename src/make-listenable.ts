@@ -1,5 +1,5 @@
 import { ArrayProxyHandler } from './array-proxy';
-import { IListenableArray, IListenableObject, WatchType, IGenericListenable, IListenableTypeOutput, TypedObject, IListenable, ListenableSignifier } from './types';
+import { Listenable, WatchType, IListenableTypeOutput, TypedObject, ListenableSignifier } from './types';
 import { ObjectProxyHandler } from './object-proxy';
 import { Observable } from 'rxjs';
 
@@ -10,10 +10,8 @@ import { Observable } from 'rxjs';
   * that is an instance of a class other than Object). To override this behavior, set the
   * optional convertClassInstances argument to true.
   */
- export function makeListenable<T>(input: Array<T>, convertClassInstances?): IListenableArray<T>;
- export function makeListenable<T extends {}>(input: T, convertClassInstances?): IListenableTypeOutput<T>;
  export function makeListenable<T>(input: Observable<T>, convertClassInstances?): Observable<T>;
- export function makeListenable<T>(input: T, convertClassInstances?): T;
+ export function makeListenable<T>(input: T, convertClassInstances?): Listenable<T>;
  export function makeListenable<T extends WatchType>(input: T, convertClassInstances = true): WatchType {
 
     // Pass through anything that definitely isn't a data structure, or that has
