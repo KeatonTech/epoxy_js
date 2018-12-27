@@ -130,7 +130,7 @@ export interface IListenableObject<T> extends Object, IListenable<
     MappedObjectObservables<T>, // Observables Structure Type
     Listenable<T>> {}           // Listenable Type
 
-type MappedObjectObservables<T extends {}> = {
+export type MappedObjectObservables<T extends {}> = {
     [P in keyof T]: Observable<T[P]>
 }
 
@@ -157,10 +157,10 @@ export type Listenable<T> =
     T extends object ? (IListenableObject<T> & MappedListenableObject<T>) :
     T;
 
-interface MappedListenableArray<T> {
+export interface MappedListenableArray<T> {
     [index: number]: Listenable<T>;
 }
 
-type MappedListenableObject<T extends {}> = {
+export type MappedListenableObject<T extends {}> = {
     [P in keyof T]: T[P] extends {} ? Listenable<T[P]> : T[P]
 }
