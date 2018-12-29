@@ -118,6 +118,12 @@ export class ArrayProxyHandler<T> extends BaseProxyHandler<T[]> {
             return popped;
         },
 
+        shift<T>(proxy: ArrayProxyHandler<T>, target: T[]) {
+            const firstItem = target[0];
+            ArrayProxyHandler.ARRAY_FUNCTION_OVERRIDES.splice.call(this, proxy, target, 0, 1);
+            return firstItem
+        },
+
         unshift<T>(proxy: ArrayProxyHandler<T>, target: T[], ...insertedItems: Array<T | Observable<T>>) {
             const popped = target[target.length - 1];
             const spliceArgs = [proxy, target, 0, 0];
