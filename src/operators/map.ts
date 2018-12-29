@@ -42,7 +42,9 @@ export function map<T, U>(
             mappedMutation = new PropertyMutation(
                 key, currentMappedValue, mapFunction(currentValue, mappedMutation.key));
         } else if (mappedMutation instanceof ArraySpliceMutation) {
-            mappedMutation.deleted = mappedMutation.deleted.map(mapFunction);
+            const index = mappedMutation.key as number;
+            mappedMutation.deleted = (mappedCollection as {}[]).slice(
+                index, index + mappedMutation.deleted.length);
             mappedMutation.inserted = mappedMutation.inserted.map(mapFunction);
         }
 
