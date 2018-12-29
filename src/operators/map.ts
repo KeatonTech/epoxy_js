@@ -25,7 +25,12 @@ export function map<T, U>(
     collection.listen().subscribe((mutation) => {
         let mappedMutation = mutation.copy();
 
-        if (!collection.hasOwnProperty(mappedMutation.key)) {
+        if (mappedMutation instanceof ArraySpliceMutation) {
+            const index = mappedMutation.key as number;
+            mappedMutation.deleted = (mappedCollection as {}[]).slice(
+                index, index + mappedMutation.deleted.length);
+            mappedMutation.inserted = mappedMutation.inserted.map(mapFunction);
+        } else if (!collection.hasOwnProperty(mappedMutation.key)) {
             const currentMappedValue = mappedCollection[mappedMutation.key];
             mappedMutation = new PropertyMutation(mappedMutation.key, currentMappedValue, undefined);
             delete mappedCollection[mappedMutation.key];
@@ -41,11 +46,6 @@ export function map<T, U>(
             const currentValue = collection[key];
             mappedMutation = new PropertyMutation(
                 key, currentMappedValue, mapFunction(currentValue, mappedMutation.key));
-        } else if (mappedMutation instanceof ArraySpliceMutation) {
-            const index = mappedMutation.key as number;
-            mappedMutation.deleted = (mappedCollection as {}[]).slice(
-                index, index + mappedMutation.deleted.length);
-            mappedMutation.inserted = mappedMutation.inserted.map(mapFunction);
         }
 
         mappedCollection.applyMutation(mappedMutation);
