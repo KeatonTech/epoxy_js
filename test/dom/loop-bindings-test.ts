@@ -8,7 +8,7 @@ import { excludeTypeFromMakeListenable } from '../../src/make-listenable';
 const { document } = (new JSDOM(`...`)).window;
 excludeTypeFromMakeListenable(document.createElement('p').constructor);
 
-describe.only('Loop DOM bindings', () => {
+describe('Loop DOM bindings', () => {
     it('creates an initial list', () => {
         const el = document.createElement('div');
         document.body.appendChild(el);
