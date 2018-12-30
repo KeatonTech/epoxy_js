@@ -1,5 +1,5 @@
 import {
-    IListenableArray, IListenableObject, ListenableCollection, TypedObject, 
+    Listenable, ListenableCollection, TypedObject, 
     ValueMutation, PropertyMutation, SubpropertyMutation, ArraySpliceMutation,
     makeListenable, optionallyComputed 
 } from "../../epoxy";
@@ -13,9 +13,13 @@ export type MapFunction<T, U>= (T, PropertyKey) => U;
  * values from other Epoxy listenable data structures.
  */
 export function map<T, U>(
-    collection: IListenableArray<T>, mapFunction: MapFunction<T, U>): IListenableArray<U>;
+    collection: Listenable<Array<T>>,
+    mapFunction: MapFunction<T, U>
+): Listenable<Array<U>>;
 export function map<T, U>(
-    collection: IListenableObject<T>, mapFunction: MapFunction<T, U>): IListenableObject<U>;
+    collection: Listenable<TypedObject<T>>,
+    mapFunction: MapFunction<T, U>
+): Listenable<TypedObject<U>>;
 export function map<T, U>(
     collection: ListenableCollection, mapFunction: MapFunction<T, U>): ListenableCollection {
     const computedMapFunction = (val, key) => optionallyComputed(() => mapFunction(val, key));

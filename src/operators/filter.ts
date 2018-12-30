@@ -1,9 +1,4 @@
-import {
-    IListenableArray, IListenableObject, ListenableCollection, TypedObject, 
-    ValueMutation, PropertyMutation, SubpropertyMutation, ArraySpliceMutation,
-    makeListenable, optionallyComputed 
-} from "../../epoxy";
-
+import { Listenable, ListenableCollection, TypedObject, makeListenable, } from "../../epoxy";
 import {filterArray} from './filter-array';
 
 export type FilterFunction<T> = (T) => Boolean;
@@ -14,9 +9,9 @@ export type FilterFunction<T> = (T) => Boolean;
  * specified in the filter function.
  */
 export function filter<T>(
-    collection: IListenableArray<T>, filterFunction: FilterFunction<T>): IListenableArray<T>;
+    collection: Listenable<Array<T>>, filterFunction: FilterFunction<T>): Listenable<Array<T>>;
 export function filter<T>(
-    collection: IListenableObject<T>, filterFunction: FilterFunction<T>): IListenableObject<T>;
+    collection: Listenable<TypedObject<T>>, filterFunction: FilterFunction<T>): Listenable<TypedObject<T>>;
 export function filter<T>(
     collection: ListenableCollection, filterFunction: FilterFunction<T>): ListenableCollection {
     if (collection instanceof Array) {
