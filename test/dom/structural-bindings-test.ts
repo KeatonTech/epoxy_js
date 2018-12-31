@@ -7,7 +7,7 @@ import { makeListenable } from '../../epoxy';
 import { appendBoundChild } from '../../src/dom/structural-bindings';
 import { excludeTypeFromMakeListenable } from '../../src/make-listenable';
 
-excludeTypeFromMakeListenable(document.createElement('p').constructor);
+excludeTypeFromMakeListenable(document.createElement('p').constructor as any);
 
 describe('Structural DOM bindings', () => {
     describe('appendChildrenFor', () => {
