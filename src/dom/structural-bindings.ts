@@ -1,7 +1,6 @@
-import {Listenable} from '../../epoxy';
+import {Listenable, ArraySpliceMutation, PropertyMutation, ValueMutation } from '../../epoxy';
 import {listenableMap} from '../../operators';
 import { DomGlobalState } from './dom-global';
-import { ArraySpliceMutation, PropertyMutation, ValueMutation } from '../mutations';
 import { Observable } from 'rxjs';
 
 /**
