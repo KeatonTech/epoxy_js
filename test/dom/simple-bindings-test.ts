@@ -3,6 +3,7 @@ import { JSDOM } from 'jsdom';
 import 'mocha';
 import { bindAttribute, bindInnerHtml, bindStyle, removeElement } from '../../dom';
 import { makeListenable } from '../../epoxy';
+import { bindClass } from '../../src/dom/simple-bindings';
 
 const { document } = (new JSDOM(`...`)).window;
 
@@ -44,6 +45,18 @@ describe('Simple DOM bindings', () => {
 
         listenable.html = '<h2>H2</h2>';
         expect(el.children[0].tagName).eqls('H2');
+    });
+
+    it('binds to an element\'s class list', () => {
+        const el = document.createElement('div');
+        document.body.appendChild(el);
+
+        const listenable = makeListenable({isSelected: false});
+        bindClass(el, 'selected', () => listenable.isSelected);
+        expect(el.outerHTML).eqls('<div></div>');
+
+        listenable.isSelected = true;
+        expect(el.outerHTML).eqls('<div class="selected"></div>');
     });
     
     it('stops bindings when the element is marked destroyed', () => {

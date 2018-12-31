@@ -2,33 +2,41 @@ import {Listenable} from '../../epoxy';
 import {listenableMap} from '../../operators';
 import { DomGlobalState } from './dom-global';
 import { ArraySpliceMutation, PropertyMutation, ValueMutation } from '../mutations';
+import { Observable } from 'rxjs';
 
 /**
  * Creates children for a given element as dictated by a listenable array. Adding items to the
  * array will add children, removing them will remove children, and re-ordering them will
  * re-order the children. Note that this will overwrite any existing children on the element.
  */
-export function bindChildren<T>(
+export function appendChildrenFor<T>(
     element: HTMLElement,           // Element whose children to replace
     list: Listenable<Array<T>>,     // Listenable list that will drive the binding
-    mapper: (T)=>HTMLElement        // Function that creates elements
+    render: (T)=>HTMLElement        // Function that creates elements
 ) {
-    // Remove any existing children
-    element.innerHTML = '';
 
     // Create a listenable list of HTML elements that can be directly applied to the
     // children of this element.
-    const mappedListenable = listenableMap(list, mapper);
+    appendBoundChildren(element, listenableMap(list, render));
+}
 
+export function appendBoundChildren(
+    element: HTMLElement,                   // Element whose children to replace
+    list: Listenable<Array<HTMLElement>>,   // Listenable list that will drive the binding
+) {
     // Initial render
-    for (const child of mappedListenable) {
+    for (const child of list) {
         element.appendChild(child);
     }
+
+    // Add a comment signifying the end of the loop area
+    const insertionPlaceholder = document.createComment('');
+    element.appendChild(insertionPlaceholder);
 
     // Watch for mutations
     DomGlobalState.addSubscriptionOnElement(
         element,
-        mappedListenable.listen().subscribe((mutation) => {
+        list.listen().subscribe((mutation) => {
             if (mutation instanceof ArraySpliceMutation) {
                 for (const deleted of mutation.deleted) {
                     DomGlobalState.removeElement(deleted);
@@ -40,7 +48,7 @@ export function bindChildren<T>(
                     if (refElement) {
                         element.insertBefore(mutation.inserted[i], refElement);
                     } else {
-                        element.appendChild(mutation.inserted[i]);
+                        element.insertBefore(mutation.inserted[i], insertionPlaceholder);
                     }
                 }
 
@@ -54,9 +62,40 @@ export function bindChildren<T>(
                     DomGlobalState.removeElement(existing);
                 }
                 element.innerHTML = '';
-                for (const child of mappedListenable) {
-                    element.appendChild(child);
+                for (const child of list) {
+                    element.insertBefore(child, insertionPlaceholder);
                 }
             }
+        }));
+}
+
+/**
+ * Adds a single child element bound to a single HTMLElement as an observable.
+ */
+export function appendBoundChild(
+    element: HTMLElement,
+    child$: Observable<HTMLElement|undefined>,
+) {
+    // Add a comment signifying the insertion point for the bound element.
+    const insertionPlaceholder = document.createComment('');
+    element.appendChild(insertionPlaceholder);
+
+    // Stores the last value of the observable.
+    let lastChild = undefined;
+
+    // Watch for changes
+    DomGlobalState.addSubscriptionOnElement(
+        element,
+        child$.subscribe((childElement) => {
+            if (lastChild !== undefined) {
+                DomGlobalState.removeElement(lastChild);
+                element.removeChild(lastChild);
+            }
+
+            if (childElement !== undefined) {
+                element.insertBefore(childElement, insertionPlaceholder);
+            }
+
+            lastChild = childElement;
         }));
 }
