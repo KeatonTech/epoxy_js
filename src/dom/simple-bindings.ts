@@ -25,7 +25,7 @@ export function bindStyle(element: HTMLElement, property: string, compute: ()=>s
  * Attaches the result of a listenable computation to the HTML content of an element.
  * This should be used sparingly as it can easily be exploited for XSS vulnerabilities.
  */
-export function bindInnerHtml(element: HTMLElement, property: string, compute: ()=>string) {
+export function bindInnerHTML(element: HTMLElement, compute: ()=>string) {
     DomGlobalState.addSubscriptionOnElement(
         element,
         computed(compute)

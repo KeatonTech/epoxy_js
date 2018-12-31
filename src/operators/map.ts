@@ -14,15 +14,22 @@ export type MapFunction<T, U>= (T, PropertyKey) => U;
  */
 export function map<T, U>(
     collection: Listenable<Array<T>>,
-    mapFunction: MapFunction<T, U>
+    mapFunction: MapFunction<T, U>,
+    allowComputedMapFunction?: boolean,
 ): Listenable<Array<U>>;
 export function map<T, U>(
     collection: Listenable<TypedObject<T>>,
-    mapFunction: MapFunction<T, U>
+    mapFunction: MapFunction<T, U>,
+    allowComputedMapFunction?: boolean,
 ): Listenable<TypedObject<U>>;
 export function map<T, U>(
-    collection: ListenableCollection, mapFunction: MapFunction<T, U>): ListenableCollection {
-    const computedMapFunction = (val, key) => optionallyComputed(() => mapFunction(val, key));
+    collection: ListenableCollection,
+    mapFunction: MapFunction<T, U>,
+    allowComputedMapFunction = true
+): ListenableCollection {
+    const computedMapFunction = allowComputedMapFunction ?
+        (val, key) => optionallyComputed(() => mapFunction(val, key)):
+        mapFunction;
     const initialValue = initialMapping(collection, computedMapFunction);
     const mappedCollection = makeListenable(initialValue) as ListenableCollection;
 

@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { JSDOM } from 'jsdom';
 import 'mocha';
-import { bindAttribute, bindInnerHtml, bindStyle, removeElement } from '../../dom';
+import { bindAttribute, bindInnerHTML, bindStyle, removeElement } from '../../dom';
 import { makeListenable } from '../../epoxy';
 import { bindClass } from '../../src/dom/simple-bindings';
 
@@ -39,7 +39,7 @@ describe('Simple DOM bindings', () => {
         document.body.appendChild(el);
 
         const listenable = makeListenable({html: '<h1>H1</h1>'});
-        bindInnerHtml(el, 'title', () => listenable.html);
+        bindInnerHTML(el, () => listenable.html);
 
         expect(el.children[0].tagName).eqls('H1');
 
