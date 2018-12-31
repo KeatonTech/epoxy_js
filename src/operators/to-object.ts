@@ -1,6 +1,5 @@
-import { Listenable } from "../../epoxy";
+import { ArraySpliceMutation, Listenable, PropertyMutation, ValueMutation } from "../../epoxy";
 import { makeListenable } from "../make-listenable";
-import { ArraySpliceMutation, PropertyMutation, SubpropertyMutation, ValueMutation } from "../mutations";
 import { map } from "./map";
 
 /**
