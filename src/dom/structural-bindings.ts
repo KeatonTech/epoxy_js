@@ -16,7 +16,11 @@ export function appendChildrenFor<T>(
 
     // Create a listenable list of HTML elements that can be directly applied to the
     // children of this element. 
-    appendBoundChildren(element, listenableMap(list, render, false /** Disallow computed mappers */));
+    appendBoundChildren(element, listenableMap(
+        list,
+        render, 
+        false /** Disable computed() on the map function  */,
+        true /** Ignore subproperty mutations; bindings will take care of it */));
 }
 
 export function appendBoundChildren(

@@ -16,16 +16,19 @@ export function map<T, U>(
     collection: Listenable<Array<T>>,
     mapFunction: MapFunction<T, U>,
     allowComputedMapFunction?: boolean,
+    ignoreSubpropertyMutations?: boolean,
 ): Listenable<Array<U>>;
 export function map<T, U>(
     collection: Listenable<TypedObject<T>>,
     mapFunction: MapFunction<T, U>,
     allowComputedMapFunction?: boolean,
+    ignoreSubpropertyMutations?: boolean,
 ): Listenable<TypedObject<U>>;
 export function map<T, U>(
     collection: ListenableCollection,
     mapFunction: MapFunction<T, U>,
-    allowComputedMapFunction = true
+    allowComputedMapFunction = true,
+    ignoreSubpropertyMutations = false,
 ): ListenableCollection {
     const computedMapFunction = allowComputedMapFunction ?
         (val, key) => optionallyComputed(() => mapFunction(val, key)):
@@ -52,6 +55,7 @@ export function map<T, U>(
             mappedMutation.oldValue = currentMapepdValue;
             mappedMutation.newValue = mapFunction(mappedMutation.newValue, mappedMutation.key);
         } else if (mappedMutation instanceof SubpropertyMutation) {
+            if (ignoreSubpropertyMutations) return;
             const currentMappedValue = mappedCollection[mappedMutation.key];
             const key = mappedMutation.key;
             const currentValue = collection[key];
