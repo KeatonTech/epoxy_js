@@ -1,29 +1,53 @@
 import { Observable } from 'rxjs';
-import { map } from "rxjs/operators";
-import { computed, Listenable } from "../../epoxy";
+import { map } from 'rxjs/operators';
+import { computed, Listenable } from '../../epoxy';
 import { listenableMap } from '../../operators';
-import { DomGlobalState } from "./dom-global";
-import { bindAttribute, bindClass, bindStyle, bindInnerHTML } from "./simple-bindings";
-import { appendBoundChild, appendBoundChildren, appendChildrenFor } from "./structural-bindings";
+import { DomGlobalState } from './dom-global';
+import { bindAttribute, bindClass, bindInnerHTML, bindStyle } from './simple-bindings';
+import { appendBoundChild, appendBoundChildren, appendChildrenFor } from './structural-bindings';
+
+/** List of tag names that should be created in the SVG namespace. */
+const SVG_TAGS = new Set([
+    'altGlyph', 'altGlyphDef', 'altGlyphItem',
+    'animate', 'animateColor', 'animateMotion', 'animateTransform', 'animation',
+    'circle', 'clipPath', 'color-profile', 'defs', 'desc', 'discard', 'ellipse',
+    'feBlend', 'feColorMatrix', 'feComponentTransfer', 'feComposite', 'feConvolveMatrix',
+    'feDiffuseLighting', 'feDisplacementMap', 'feDistantLight', 'feDropShadow',
+    'feFlood', 'feFuncA', 'feFuncB', 'feFuncG', 'feFuncR', 'feGaussianBlur', 'feImage',
+    'feMerge', 'feMergeNode', 'feMorphology', 'feOffset', 'fePointLight',
+    'feSpecularLighting', 'feSpotLight', 'feTile', 'feTurbulence',
+    'filter', 'font', 'font-face', 'font-face-format', 'font-face-name', 'font-face-src',
+    'font-face-uri', 'foreignObject', 'g', 'glyph', 'glyphRef', 'handler',
+    'hatch', 'hatchpath', 'hkern', 'image', 'line', 'linearGradient', 'listener',
+    'marker', 'mask', 'mesh', 'meshgradient', 'meshpatch', 'meshrow', 'metadata',
+    'missing-glyph', 'mpath', 'path', 'pattern', 'polygon', 'polyline', 'prefetch',
+    'radialGradient', 'rect', 'set', 'solidColor', 'solidcolor', 'stop', 'svg',
+    'switch', 'symbol', 'tbreak', 'text', 'textPath', 'tref', 'tspan', 'unknown',
+    'use', 'view', 'vkern'
+]);
 
 /** Defines builder syntax that can be used to create Epoxy-bound UI. */
 export class EpoxyDomElement {
 
     /** The underlying HTML element */
-    protected readonly el: HTMLElement;
+    protected readonly el: Element;
 
     constructor(
         /** The HTML tag name of the element. */
         readonly tagName: string
     ) {
-        this.el = document.createElement(this.tagName);
+        if (SVG_TAGS.has(tagName)) {
+            this.el = document.createElementNS('http://www.w3.org/2000/svg', this.tagName);
+        } else {
+            this.el = document.createElement(this.tagName);
+        }
     }
 
-    appendTo(parent: HTMLElement) {
+    appendTo(parent: Element) {
         parent.appendChild(this.el);
     }
 
-    build(): HTMLElement {
+    build(): Element {
         return this.el;
     }
 
@@ -55,12 +79,12 @@ export class EpoxyDomElement {
 
     /** CSS Styles */
     setStyle(styleName: string, value: string): EpoxyDomElement {
-        this.el.style[styleName] = value;
+        (this.el as HTMLElement).style[styleName] = value;
         return this;
     }
 
     bindStyle(styleName: string, value: () => string): EpoxyDomElement {
-        bindStyle(this.el, styleName, value);
+        bindStyle(this.el as HTMLElement, styleName, value);
         return this;
     }
 
@@ -88,7 +112,7 @@ export class EpoxyDomElement {
 
 
     /** Children */
-    appendChild(child: HTMLElement|EpoxyDomElement): EpoxyDomElement {
+    appendChild(child: Element|EpoxyDomElement): EpoxyDomElement {
         if (child instanceof EpoxyDomElement) {
             child = child.el;
         }
@@ -98,7 +122,7 @@ export class EpoxyDomElement {
 
     appendConditionalChild(
         condition: () => boolean,
-        makeChild: () => HTMLElement|EpoxyDomElement
+        makeChild: () => Element|EpoxyDomElement
     ): EpoxyDomElement {
        appendBoundChild(this.el, computed(condition).pipe(map((condition) => {
            if (condition) {
@@ -115,14 +139,14 @@ export class EpoxyDomElement {
     }
 
     appendBoundChild(
-        child$: Observable<HTMLElement>
+        child$: Observable<Element>
     ): EpoxyDomElement {
         appendBoundChild(this.el, child$);
         return this;
     }
 
     appendBoundChildren(
-        children: Listenable<Array<HTMLElement|EpoxyDomElement>>
+        children: Listenable<Array<Element|EpoxyDomElement>>
     ): EpoxyDomElement {
         appendBoundChildren(this.el, listenableMap(children, (child) => {
             if (child instanceof EpoxyDomElement) {
@@ -136,7 +160,7 @@ export class EpoxyDomElement {
 
     appendChildrenFor<T>(
         list: Listenable<Array<T>>,
-        render: (T) => HTMLElement|EpoxyDomElement
+        render: (T) => Element|EpoxyDomElement
     ): EpoxyDomElement {
         appendChildrenFor(this.el, list, (item: T) => {
             const rendered = render(item);

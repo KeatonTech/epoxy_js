@@ -9,9 +9,9 @@ import { Observable } from 'rxjs';
  * re-order the children. Note that this will overwrite any existing children on the element.
  */
 export function appendChildrenFor<T>(
-    element: HTMLElement,           // Element whose children to replace
+    element: Element,           // Element whose children to replace
     list: Listenable<Array<T>>,     // Listenable list that will drive the binding
-    render: (T)=>HTMLElement        // Function that creates elements
+    render: (T)=>Element        // Function that creates elements
 ) {
 
     // Create a listenable list of HTML elements that can be directly applied to the
@@ -24,8 +24,8 @@ export function appendChildrenFor<T>(
 }
 
 export function appendBoundChildren(
-    element: HTMLElement,                   // Element whose children to replace
-    list: Listenable<Array<HTMLElement>>,   // Listenable list that will drive the binding
+    element: Element,                   // Element whose children to replace
+    list: Listenable<Array<Element>>,   // Listenable list that will drive the binding
 ) {
     // Initial render
     for (const child of list) {
@@ -73,11 +73,11 @@ export function appendBoundChildren(
 }
 
 /**
- * Adds a single child element bound to a single HTMLElement as an observable.
+ * Adds a single child element bound to a single Element as an observable.
  */
 export function appendBoundChild(
-    element: HTMLElement,
-    child$: Observable<HTMLElement|undefined>,
+    element: Element,
+    child$: Observable<Element|undefined>,
 ) {
     // Add a comment signifying the insertion point for the bound element.
     const insertionPlaceholder = document.createComment('');

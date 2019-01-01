@@ -132,4 +132,9 @@ describe('EpoxyDomElement', () => {
         data[0].name = 'updated';
         expect(parent.innerHTML).eqls('<div><p class="item">updated</p><!----></div>');
     });
+
+    it('should generate SVG elements when necessary', () => {
+        const svgEl = new EpoxyDomElement('g');
+        expect(svgEl.build().namespaceURI).eqls('http://www.w3.org/2000/svg');
+    });
 });
