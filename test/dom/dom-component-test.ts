@@ -5,7 +5,7 @@ import { Subject } from 'rxjs';
 import { makeListenable, Listenable, excludeTypeFromMakeListenable } from '../../epoxy';
 import { EpoxyDomComponent, EpoxyDomElement } from '../../dom';
 
-excludeTypeFromMakeListenable(EpoxyDomElement);
+excludeTypeFromMakeListenable(EpoxyDomElement as any);
 excludeTypeFromMakeListenable(Node);
 
 describe('EpoxyDomComponent', () => {
