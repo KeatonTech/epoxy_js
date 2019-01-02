@@ -135,6 +135,6 @@ describe('EpoxyDomElement', () => {
 
     it('should generate SVG elements when necessary', () => {
         const svgEl = new EpoxyDomElement('g');
-        expect(svgEl.build().namespaceURI).eqls('http://www.w3.org/2000/svg');
+        expect(svgEl['el'].namespaceURI).eqls('http://www.w3.org/2000/svg');
     });
 });

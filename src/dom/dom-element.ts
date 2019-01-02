@@ -1,10 +1,10 @@
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { computed, Listenable } from '../../epoxy';
+import { computed, Listenable, ArraySpliceMutation, PropertyMutation, ValueMutation } from '../../epoxy';
 import { listenableMap } from '../../operators';
 import { DomGlobalState } from './dom-global';
 import { bindAttribute, bindClass, bindInnerHTML, bindStyle } from './simple-bindings';
-import { appendBoundChild, appendBoundChildren, appendChildrenFor } from './structural-bindings';
+import { appendBoundChild, appendBoundChildren } from './structural-bindings';
 
 /** List of tag names that should be created in the SVG namespace. */
 const SVG_TAGS = new Set([
@@ -32,6 +32,9 @@ export class EpoxyDomElement {
     /** The underlying HTML element */
     protected readonly el: Element;
 
+    /** Listener functions that run whenever a new child is added. */
+    private onAddedChildListeners: Array<(Element) => void> = [];
+
     constructor(
         /** The HTML tag name of the element. */
         readonly tagName: string
@@ -45,10 +48,6 @@ export class EpoxyDomElement {
 
     appendTo(parent: Element) {
         parent.appendChild(this.el);
-    }
-
-    build(): Element {
-        return this.el;
     }
 
     destroy() {
@@ -110,6 +109,10 @@ export class EpoxyDomElement {
         return this;
     }
 
+    onAddedChild(handler: (Element) => void) {
+        this.onAddedChildListeners.push(handler);
+    }
+    
 
     /** Children */
     appendChild(child: Element|EpoxyDomElement): EpoxyDomElement {
@@ -117,6 +120,7 @@ export class EpoxyDomElement {
             child = child.el;
         }
         this.el.appendChild(child); 
+        this.onAddedChildListeners.forEach((cb) => cb(child));
         return this;
     }
 
@@ -124,24 +128,16 @@ export class EpoxyDomElement {
         condition: () => boolean,
         makeChild: () => Element|EpoxyDomElement
     ): EpoxyDomElement {
-       appendBoundChild(this.el, computed(condition).pipe(map((condition) => {
-           if (condition) {
-               const el = makeChild();
-               if (el instanceof EpoxyDomElement) {
-                   return el.el;
-               } else {
-                   return el;
-               }
-           }
-           return undefined;
-       })));
-       return this;
+       return this.appendBoundChild(computed(condition).pipe(
+           map((condition) => condition ? makeChild() : undefined)));
     }
 
     appendBoundChild(
-        child$: Observable<Element>
+        child$: Observable<Element|EpoxyDomElement>
     ): EpoxyDomElement {
-        appendBoundChild(this.el, child$);
+        appendBoundChild(this.el, child$.pipe(
+            map((child) => child instanceof EpoxyDomElement ? child.el : child)));
+        child$.subscribe((child) => this.onAddedChildListeners.forEach((cb) => cb(child)));
         return this;
     }
 
@@ -155,6 +151,29 @@ export class EpoxyDomElement {
                 return child;
             }
         }));
+
+        for (const child of children) {
+            this.onAddedChildListeners.forEach((cb) => cb(child));
+        }
+
+        DomGlobalState.addSubscriptionOnElement(
+            this.el,
+            children.listen().subscribe((mutation) => {
+                if (mutation instanceof ArraySpliceMutation) {
+                    for (const inserted of mutation.inserted) {
+                        this.onAddedChildListeners.forEach((cb) => cb(inserted));
+                    }
+    
+                } else if (mutation instanceof PropertyMutation) {
+                    this.onAddedChildListeners.forEach((cb) => cb(mutation.newValue));
+    
+                } else if (mutation instanceof ValueMutation) {
+                    for (const child of children) {
+                        this.onAddedChildListeners.forEach((cb) => cb(child));
+                    }
+                }
+            }));
+
         return this;
     }
 
@@ -162,14 +181,11 @@ export class EpoxyDomElement {
         list: Listenable<Array<T>>,
         render: (T) => Element|EpoxyDomElement
     ): EpoxyDomElement {
-        appendChildrenFor(this.el, list, (item: T) => {
-            const rendered = render(item);
-            if (rendered instanceof EpoxyDomElement) {
-                return rendered.el;
-            } else {
-                return rendered;
-            }
-        });
-        return this;
+        return this.appendBoundChildren(listenableMap(
+            list,
+            render,
+            false,
+            true
+        ));
     }
 }
